@@ -1,22 +1,3 @@
-# app/core/configs/config_validator.py
-"""
-Configuration schema definitions and validation.
-
-Validates the *fully merged* configuration tree (defaults + YAML + env) and
-returns a normalized, type-safe representation. Validation runs during Phase 0
-bootstrap, before any feature group starts, so misconfiguration fails fast and
-loud instead of surfacing as a subtle runtime error deep inside FG1/FG2.
-
-Dependency order
-----------------
-Depends on ``environment.py`` and ``defaults.py``. No filesystem I/O.
-
-Pydantic
---------
-Uses Pydantic v2 when available. If Pydantic is not installed, a minimal
-structural fallback validator is used so the system can still boot in a
-degraded (but reported) validation mode.
-"""
 
 from __future__ import annotations
 
