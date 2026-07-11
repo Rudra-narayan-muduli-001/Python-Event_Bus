@@ -1,41 +1,10 @@
-# app/core/constants/models.py
-"""
-AI model registry constants for AIOS.
-
-Defines the closed set of model *roles*, concrete model identifiers, execution
-devices, quantization options, and default primary/fallback routing used by:
-    * FG2 Model Manager   (Gemma, Groq, MiniLM, embeddings, Qdrant embeddings)
-    * FG4 Language Core   (Whisper, Meta Omnilingual CTC, MarianMT, Kokoro, Piper)
-    * FG3 Vision Tiers    (YOLOv26, PaddleOCR, GoClick/Florence-2)
-    * FG6 Authentication  (CAMP++, ECAPA-TDNN, Silero VAD)
-
-The editable, environment-specific bindings live in
-`configs/model_registry.yaml`; this module fixes the vocabulary those configs
-may reference so the config validator can reject unknown models at load time.
-
-Design rules:
-    * `str`-based enums; immutable spec maps frozen with MappingProxyType.
-    * Resource figures are advisory targets for the reference hardware
-      (Ryzen 7 + RTX 5050 / 8 GB VRAM) — used for scheduling, not hard limits.
-    * Standard library only; import-safe; no cycles.
-"""
-
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
 from typing import Final, Mapping, Optional
 
-
-# ---------------------------------------------------------------------------
-# Model roles and execution devices
-# ---------------------------------------------------------------------------
-
-
 class ModelRole(str, Enum):
-    """The functional slot a model fills within the pipeline."""
-
     INTENT = "intent"
     LOCAL_LLM = "local_llm"
     CLOUD_LLM = "cloud_llm"
@@ -54,83 +23,41 @@ class ModelRole(str, Enum):
 
 
 class Device(str, Enum):
-    """Preferred execution device. Model Manager may fall back CPU<->GPU."""
-
     CPU = "cpu"
     GPU = "gpu"
     AUTO = "auto"
 
 
 class Quantization(str, Enum):
-    """Supported quantization formats managed by the Model Manager."""
-
     NONE = "none"
     FP16 = "fp16"
     INT8 = "int8"
-    Q4_K_M = "q4_k_m"   # llama.cpp GGUF quant for local Gemma
+    Q4_K_M = "q4_k_m" 
     Q5_K_M = "q5_k_m"
 
 
-# ---------------------------------------------------------------------------
-# Concrete model identifiers (as named in the SDDs)
-# ---------------------------------------------------------------------------
-
 
 class ModelId(str, Enum):
-    """Canonical identifiers for every model referenced by the architecture."""
-
-    # Intent / semantic
     MINILM_L6_V2 = "all-MiniLM-L6-v2"
     E5_MULTILINGUAL_SMALL = "multilingual-e5-small"
-
-    # LLMs
-    GEMMA_4_E2B = "gemma-4-e2b"          # Local, via llama.cpp
-    GROQ = "groq"                        # Cloud API
-
-    # Speech recognition / language detection
+    GEMMA_4_E2B = "gemma-4-e2b"         
+    GROQ = "groq"                       
     WHISPER_SMALL = "whisper-small"
     META_OMNILINGUAL_CTC = "meta-omnilingual-ctc"
-
-    # Translation
-    MARIANMT_INT8 = "marianmt-int8"      # via CTranslate2
-
-    # Text-to-speech
+    MARIANMT_INT8 = "marianmt-int8" 
     KOKORO_82M = "kokoro-82m"
     PIPER = "piper"
     INDIC_TTS = "indic-tts"
-
-    # Speaker verification / VAD / wake word
     CAMPPLUSPLUS = "campplusplus"
     ECAPA_TDNN = "ecapa-tdnn"
     SILERO_VAD = "silero-vad"
     OPENWAKEWORD = "openwakeword"
-
-    # Vision tiers (FG3)
     YOLOV26_MEDIUM = "yolov26-medium"
     PADDLEOCR = "paddleocr"
     GOCLICK_FLORENCE2 = "goclick-florence2"
 
-
-# ---------------------------------------------------------------------------
-# Model specification
-# ---------------------------------------------------------------------------
-
-
 @dataclass(frozen=True, slots=True)
 class ModelSpec:
-    """Immutable descriptor for a single model.
-
-    Attributes:
-        model_id:        Canonical identifier.
-        role:            Functional slot filled.
-        device:          Preferred execution device.
-        offline:         True if runnable without network access.
-        approx_vram_mb:  Advisory VRAM footprint on the reference GPU (0 = CPU).
-        approx_ram_mb:   Advisory system RAM footprint.
-        quantizations:   Supported quant formats (first = recommended default).
-        runtime:         Backing runtime/engine (informational).
-    """
-
     model_id: ModelId
     role: ModelRole
     device: Device
@@ -224,13 +151,6 @@ MODEL_SPECS: Final[Mapping[ModelId, ModelSpec]] = MappingProxyType(
     }
 )
 
-
-# ---------------------------------------------------------------------------
-# Default primary / fallback routing per role
-# ---------------------------------------------------------------------------
-# Mirrors the model registries in FG2 §32 and FG4. `model_registry.yaml`
-# overrides these at runtime; the tuple order is (primary, *fallbacks).
-
 DEFAULT_MODEL_ROUTING: Final[Mapping[ModelRole, tuple[ModelId, ...]]] = MappingProxyType(
     {
         ModelRole.INTENT: (ModelId.MINILM_L6_V2,),
@@ -250,40 +170,24 @@ DEFAULT_MODEL_ROUTING: Final[Mapping[ModelRole, tuple[ModelId, ...]]] = MappingP
     }
 )
 
-
-# ---------------------------------------------------------------------------
-# Pure helpers
-# ---------------------------------------------------------------------------
-
-
 def get_spec(model_id: ModelId) -> ModelSpec:
-    """Return the immutable spec for a model, or raise KeyError if unknown."""
     return MODEL_SPECS[model_id]
 
 
 def primary_model(role: ModelRole) -> ModelId:
-    """Return the default primary model for a role."""
     return DEFAULT_MODEL_ROUTING[role][0]
 
 
 def fallback_models(role: ModelRole) -> tuple[ModelId, ...]:
-    """Return the ordered fallback models for a role (may be empty)."""
     return DEFAULT_MODEL_ROUTING[role][1:]
 
 
 def models_for_role(role: ModelRole) -> tuple[ModelId, ...]:
-    """Return every model registered for a role, primary first."""
     return DEFAULT_MODEL_ROUTING.get(role, ())
 
 
 def offline_models() -> tuple[ModelId, ...]:
-    """Return all models runnable without network access."""
     return tuple(mid for mid, spec in MODEL_SPECS.items() if spec.offline)
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 
 __all__ = [
     "ModelRole",
