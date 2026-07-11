@@ -1,32 +1,3 @@
-# app/core/configs/config_manager.py
-"""
-Central configuration manager (thread-safe singleton facade).
-
-This is the public entry point every subsystem uses to read configuration.
-It composes the loader and validator, caches the validated result, and offers
-ergonomic, read-mostly access with dotted keys, typed getters, feature-flag
-helpers, and change notifications.
-
-Lifecycle
----------
-* ``ConfigManager.bootstrap()`` is called once during Phase 0, after paths are
-  established, to load + validate config and (optionally) create directories.
-* All later reads go through the cached snapshot; ``reload()`` rebuilds it
-  atomically and notifies subscribers.
-
-Concurrency
------------
-The multi-threaded voice pipeline (FG1) and the async brain (FG2) read config
-concurrently. Reads are lock-free against an immutable snapshot; writes
-(bootstrap/reload) swap the snapshot under a lock. Returned values are deep
-copies so callers cannot mutate shared state.
-
-Dependency order
-----------------
-Top of the config package: depends on environment, paths, defaults, loader,
-and validator.
-"""
-
 from __future__ import annotations
 
 import threading
@@ -45,10 +16,8 @@ __all__ = [
     "get_config_manager",
 ]
 
-# Sentinel distinguishing "key absent" from an explicit ``None`` default.
 _MISSING = object()
 
-# Type alias for change subscribers: called with (old_snapshot, new_snapshot).
 ChangeListener = Callable[[dict[str, Any], dict[str, Any]], None]
 
 
@@ -57,14 +26,11 @@ class ConfigError(RuntimeError):
 
 
 class ConfigManager:
-    """Thread-safe accessor for the validated application configuration."""
 
     _instance: Optional["ConfigManager"] = None
     _singleton_lock: threading.Lock = threading.Lock()
 
     def __init__(self) -> None:
-        # Instances are normally obtained via ``instance()``. Direct
-        # construction is allowed (useful for isolated tests).
         self._lock = threading.RLock()
         self._config: dict[str, Any] = {}
         self._paths: Optional[ProjectPaths] = None
@@ -72,11 +38,9 @@ class ConfigManager:
         self._loaded: bool = False
         self._listeners: list[ChangeListener] = []
 
-    # ------------------------------------------------------------------ singleton
 
     @classmethod
     def instance(cls) -> "ConfigManager":
-        """Return the process-wide singleton, constructing it if needed."""
         if cls._instance is None:
             with cls._singleton_lock:
                 if cls._instance is None:
@@ -89,8 +53,6 @@ class ConfigManager:
         with cls._singleton_lock:
             cls._instance = None
 
-    # ------------------------------------------------------------------ lifecycle
-
     def bootstrap(
         self,
         paths: Optional[ProjectPaths] = None,
@@ -99,19 +61,11 @@ class ConfigManager:
         create_directories: bool = True,
         strict: Optional[bool] = None,
     ) -> "ConfigManager":
-        """Load, validate, and cache configuration. Call once in Phase 0.
-
-        Raises
-        ------
-        ConfigError
-            If loading or validation fails.
-        """
         with self._lock:
             self._paths = paths or get_paths()
             self._environment = environment or get_environment()
 
             if create_directories:
-                # Guarantee the writable tree exists before anything writes to it.
                 self._paths.ensure_directories()
 
             snapshot = self._build_snapshot(strict=strict)
@@ -122,11 +76,7 @@ class ConfigManager:
             return self
 
     def reload(self, *, strict: Optional[bool] = None) -> dict[str, Any]:
-        """Rebuild the config snapshot atomically and notify subscribers.
-
-        On failure the previous snapshot is preserved (fail-secure) and the
-        error is raised to the caller.
-        """
+       
         with self._lock:
             if self._paths is None:
                 self._paths = get_paths()
@@ -149,23 +99,15 @@ class ConfigManager:
         try:
             validated = validate_config(raw)
         except ConfigValidationError as exc:
-            # Preserve the structured error list for logging/telemetry.
             raise ConfigError(str(exc)) from exc
         return validated
 
-    # ------------------------------------------------------------------ access
 
     def _ensure_loaded(self) -> None:
         if not self._loaded:
-            # Lazy bootstrap keeps early accidental reads working, but Phase 0
-            # should call bootstrap() explicitly.
             self.bootstrap()
 
     def get(self, dotted_key: str, default: Any = None) -> Any:
-        """Return a value by dotted path (e.g. ``"logging.level"``).
-
-        Returns a deep copy so callers cannot mutate the cached snapshot.
-        """
         self._ensure_loaded()
         with self._lock:
             cursor: Any = self._config
@@ -212,8 +154,6 @@ class ConfigManager:
         with self._lock:
             return deepcopy(self._config)
 
-    # ------------------------------------------------------------------ feature flags
-
     def is_feature_enabled(self, flag: str, default: bool = False) -> bool:
         """Return whether a feature flag under ``feature_flags`` is enabled."""
         self._ensure_loaded()
@@ -221,8 +161,6 @@ class ConfigManager:
             flags = self._config.get("feature_flags", {})
             value = flags.get(flag, default)
         return bool(value)
-
-    # ------------------------------------------------------------------ metadata
 
     @property
     def environment(self) -> AppEnvironment:
@@ -235,18 +173,10 @@ class ConfigManager:
     @property
     def paths(self) -> ProjectPaths:
         self._ensure_loaded()
-        assert self._paths is not None  # populated during bootstrap
+        assert self._paths is not None  
         return self._paths
 
-    # ------------------------------------------------------------------ subscriptions
-
     def subscribe(self, listener: ChangeListener) -> Callable[[], None]:
-        """Register a change listener; returns an unsubscribe callable.
-
-        Listeners are invoked (old, new) after every bootstrap/reload. Listener
-        exceptions are swallowed to protect the reload path; subscribers are
-        responsible for their own error handling.
-        """
         with self._lock:
             self._listeners.append(listener)
 
@@ -258,27 +188,20 @@ class ConfigManager:
         return _unsubscribe
 
     def _notify(self, old: dict[str, Any], new: dict[str, Any]) -> None:
-        # Copy the listener list under lock, invoke outside to avoid deadlocks.
         with self._lock:
             listeners = list(self._listeners)
         for listener in listeners:
             try:
                 listener(deepcopy(old), deepcopy(new))
-            except Exception:  # noqa: BLE001 - never let a listener break reload
+            except Exception:  
                 continue
 
 
-# --------------------------------------------------------------------------- #
-# Module-level convenience accessors
-# --------------------------------------------------------------------------- #
-
 def get_config_manager() -> ConfigManager:
-    """Return the singleton :class:`ConfigManager`."""
     return ConfigManager.instance()
 
 
 def get_config(dotted_key: Optional[str] = None, default: Any = None) -> Any:
-    """Shortcut: fetch one dotted key, or the whole config if ``key`` is None."""
     manager = ConfigManager.instance()
     if dotted_key is None:
         return manager.as_dict()
