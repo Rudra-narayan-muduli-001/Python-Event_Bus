@@ -9,18 +9,13 @@ from app.core.configs.environment import AppEnvironment, get_environment
 __all__ = ["DEFAULT_CONFIG", "get_default_config", "default_for"]
 
 
-# --------------------------------------------------------------------------- #
-# Base defaults (environment-independent)
-# --------------------------------------------------------------------------- #
-
-
 _BASE_DEFAULTS: Final[dict[str, Any]] = {
-    # ---- app_config.yaml ----------------------------------------------------
+   
     "app": {
         "name": "AIOS",
         "display_name": "Personal AI Operating System",
         "version": "0.1.0",
-        "environment": "production",          # overridden by resolved env
+        "environment": "production",          
         "debug": False,
         "high_load_mode": False,              
         "shutdown_grace_seconds": 10,
@@ -33,7 +28,6 @@ _BASE_DEFAULTS: Final[dict[str, Any]] = {
         },
     },
 
-    # ---- core runtime -------------------------------------------------------
     "core": {
         "event_bus": {
             "max_queue_size": 10000,
@@ -78,10 +72,10 @@ _BASE_DEFAULTS: Final[dict[str, Any]] = {
         "fg4_language": True,
         "fg5_gui": True,
         "fg6_security": True,
-        "fg7_plugins": False,                 # off by default (untrusted code)
+        "fg7_plugins": False,                
         "fg8_productivity": True,
-        "fg9_agents": False,                  # off by default (autonomy)
-        "fg10_self_learning": False,          # off by default (self-modifying)
+        "fg9_agents": False,                  
+        "fg10_self_learning": False,          
         "online_search": True,
         "cloud_llm": True,
     },
@@ -96,12 +90,12 @@ _BASE_DEFAULTS: Final[dict[str, Any]] = {
         "translation": "marianmt-int8",
         "tts_primary": "kokoro",
         "tts_fallback": "piper",
-        "prefer_local": True,                 # offline-first default
+        "prefer_local": True,                 
     },
 
     
     "permissions": {
-        "default_role": "guest",              # fail-secure: least privilege
+        "default_role": "guest",              
         "roles": ["guest", "user", "admin", "super_admin", "system"],
         "require_auth": True,
         "continuous_verification": True,
@@ -118,16 +112,11 @@ _BASE_DEFAULTS: Final[dict[str, Any]] = {
 
     
     "paths": {
-        # Empty by default: paths.py owns canonical resolution. This section
-        # only exists for optional user overrides of specific subdirectories.
+        
     },
 }
 
 
-# --------------------------------------------------------------------------- #
-# Environment-conditional overlays
-# --------------------------------------------------------------------------- #
-# Applied on top of _BASE_DEFAULTS depending on the active environment.
 
 _ENV_OVERLAYS: Final[dict[AppEnvironment, dict[str, Any]]] = {
     AppEnvironment.DEVELOPMENT: {
@@ -166,16 +155,12 @@ def get_default_config(environment: AppEnvironment | None = None) -> dict[str, A
     
     env = environment or get_environment()
     merged = _deep_merge(_BASE_DEFAULTS, _ENV_OVERLAYS.get(env, {}))
-    # Stamp the resolved environment into the tree.
     merged.setdefault("app", {})["environment"] = env.value
     return merged
 
 
 def default_for(section: str, environment: AppEnvironment | None = None) -> dict[str, Any]:
-    """Return the default sub-tree for a single top-level ``section``.
-
-    Returns an empty dict if the section has no declared defaults.
-    """
+    
     return deepcopy(get_default_config(environment).get(section, {}))
 
 
