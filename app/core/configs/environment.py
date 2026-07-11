@@ -24,10 +24,8 @@ __all__ = [
 
 T = TypeVar("T")
 
-# Canonical name of the variable that selects the environment.
 ENV_VAR_NAME: Final[str] = "AIOS_ENV"
 
-# Truthy / falsy tokens accepted for boolean coercion (case-insensitive).
 _TRUE_TOKENS: Final[frozenset[str]] = frozenset({"1", "true", "yes", "y", "on", "enabled"})
 _FALSE_TOKENS: Final[frozenset[str]] = frozenset({"0", "false", "no", "n", "off", "disabled"})
 
@@ -75,7 +73,6 @@ def load_dotenv_if_present(dotenv_path: Optional[Path] = None) -> bool:
 
     target = dotenv_path
     if target is None:
-        # Walk upward from CWD looking for a .env; default to CWD/.env.
         candidate = Path.cwd() / ".env"
         target = candidate if candidate.exists() else None
 
@@ -86,7 +83,7 @@ def load_dotenv_if_present(dotenv_path: Optional[Path] = None) -> bool:
 
 
 def get_environment() -> AppEnvironment:
-    """Return the currently active :class:`AppEnvironment`."""
+    
     return AppEnvironment.from_string(os.environ.get(ENV_VAR_NAME))
 
 
@@ -96,7 +93,7 @@ def _coerce(
     default: Optional[T],
     required: bool,
 ) -> Optional[T]:
-    """Internal helper that reads, validates, and casts an env var."""
+   
     raw = os.environ.get(key)
     if raw is None or raw == "":
         if required:
