@@ -13,10 +13,6 @@ __all__ = [
 
 
 class ConfigValidationError(ValueError):
-    """Raised when the merged configuration fails validation.
-
-    Carries a list of human-readable error strings for logging/telemetry.
-    """
 
     def __init__(self, errors: list[str]) -> None:
         self.errors = errors
@@ -24,7 +20,6 @@ class ConfigValidationError(ValueError):
         super().__init__(f"Configuration validation failed:\n  - {joined}")
 
 
-# Canonical allowed value sets, sourced from the SDD documents.
 _VALID_ROLES: Final[frozenset[str]] = frozenset(
     {"guest", "user", "admin", "super_admin", "system"}
 )
@@ -33,13 +28,9 @@ _VALID_LOG_LEVELS: Final[frozenset[str]] = frozenset(
 )
 _VALID_LANGUAGE_MODES: Final[frozenset[str]] = frozenset({"smart", "fixed", "follow"})
 _KNOWN_LANGUAGES: Final[frozenset[str]] = frozenset(
-    {"en", "hi", "hinglish", "or"}  # extendable via language_policy registry
+    {"en", "hi", "hinglish", "or"}  
 )
 
-
-# --------------------------------------------------------------------------- #
-# Pydantic path (preferred)
-# --------------------------------------------------------------------------- #
 try:
     from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -126,8 +117,7 @@ try:
         @field_validator("default_language")
         @classmethod
         def _default_language_supported(cls, value: str) -> str:
-            # Warn-level constraint kept soft: unknown codes allowed but flagged
-            # by the registry layer; here we only reject empties.
+           
             if not value.strip():
                 raise ValueError("default_language must not be empty")
             return value
@@ -145,11 +135,10 @@ try:
         prefer_local: bool = True
 
     class _FeatureFlagsModel(BaseModel):
-        # Feature flags are open-ended booleans; allow extras but coerce types.
+        
         model_config = ConfigDict(extra="allow")
 
     class _RootConfigModel(BaseModel):
-        """Top-level validated configuration document."""
 
         model_config = ConfigDict(extra="allow")
 
@@ -161,18 +150,7 @@ try:
         feature_flags: _FeatureFlagsModel = Field(default_factory=_FeatureFlagsModel)
 
     def validate_config(config: dict[str, Any]) -> dict[str, Any]:
-        """Validate and normalize a merged config dict via Pydantic.
-
-        Returns
-        -------
-        dict
-            The validated configuration, re-serialized to plain dicts.
-
-        Raises
-        ------
-        ConfigValidationError
-            If any section fails validation.
-        """
+        
         try:
             model = _RootConfigModel.model_validate(config)
         except ValidationError as exc:
@@ -183,15 +161,11 @@ try:
             raise ConfigValidationError(errors) from exc
         return model.model_dump(mode="python")
 
-except ImportError:  # pragma: no cover - exercised only without pydantic
+except ImportError:  
     PYDANTIC_AVAILABLE = False
 
     def validate_config(config: dict[str, Any]) -> dict[str, Any]:
-        """Structural fallback validator used when Pydantic is unavailable.
-
-        Performs the essential invariant checks that protect the boot path,
-        without full schema coverage.
-        """
+        
         errors: list[str] = []
 
         app = config.get("app")
