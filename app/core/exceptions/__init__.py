@@ -1,47 +1,10 @@
-# app/core/exceptions/__init__.py
-"""
-AIOS core exception package — public API.
-
-This package defines the entire structured exception hierarchy for the system.
-Every custom exception derives from :class:`AIOSError` (in ``base``) and carries
-a stable ``code``, an :class:`ErrorSeverity`, an :class:`ErrorCategory`, and a
-serializable context payload, so errors flow uniformly into the Event Bus,
-audit logs, telemetry, and the Recovery Manager.
-
-Usage
------
-Import directly from the package root, not the submodules:
-
-    from app.core.exceptions import (
-        AIOSError,
-        ConfigValidationError,
-        PermissionDeniedError,
-        ToolExecutionError,
-    )
-
-Design
-------
-* ``base`` has zero project dependencies and is import-safe at the very first
-  bootstrap step.
-* Every domain module depends only on ``base``, so importing this package can
-  never create a circular import with the subsystems that raise these errors.
-* ``get_exception_for_category`` maps an :class:`ErrorCategory` back to its
-  base class, which the Event Bus / Recovery Manager can use for generic
-  handling and routing.
-"""
-
 from __future__ import annotations
-
 from typing import Type
-
-# --- Foundation -----------------------------------------------------------
 from app.core.exceptions.base import (
     AIOSError,
     ErrorCategory,
     ErrorSeverity,
 )
-
-# --- Configuration --------------------------------------------------------
 from app.core.exceptions.configuration import (
     ConfigFileNotFoundError,
     ConfigMergeError,
@@ -52,8 +15,6 @@ from app.core.exceptions.configuration import (
     InvalidConfigValueError,
     MissingConfigKeyError,
 )
-
-# --- Dependency injection -------------------------------------------------
 from app.core.exceptions.dependency import (
     CircularDependencyError,
     DependencyError,
@@ -63,8 +24,6 @@ from app.core.exceptions.dependency import (
     ProviderError,
     ScopeError,
 )
-
-# --- Database -------------------------------------------------------------
 from app.core.exceptions.database import (
     BackupError,
     ConnectionError,
@@ -77,8 +36,6 @@ from app.core.exceptions.database import (
     TransactionError,
     VectorStoreError,
 )
-
-# --- State ----------------------------------------------------------------
 from app.core.exceptions.state import (
     InvalidStateError,
     InvalidStateTransitionError,
@@ -88,8 +45,6 @@ from app.core.exceptions.state import (
     StateSnapshotError,
     StateValidationError,
 )
-
-# --- Event bus ------------------------------------------------------------
 from app.core.exceptions.event import (
     EventDispatchError,
     EventError,
@@ -99,8 +54,6 @@ from app.core.exceptions.event import (
     EventSubscriptionError,
     UnknownEventTypeError,
 )
-
-# --- Queues ---------------------------------------------------------------
 from app.core.exceptions.queue import (
     InvalidPriorityError,
     QueueClosedError,
@@ -111,8 +64,6 @@ from app.core.exceptions.queue import (
     QueueOverflowError,
     QueueTimeoutError,
 )
-
-# --- Security -------------------------------------------------------------
 from app.core.exceptions.security import (
     AuditIntegrityError,
     AuthenticationError,
@@ -126,8 +77,6 @@ from app.core.exceptions.security import (
     SecurityError,
     SpeakerVerificationError,
 )
-
-# --- Validation -----------------------------------------------------------
 from app.core.exceptions.validation import (
     ConstraintViolationError,
     MissingFieldError,
@@ -137,8 +86,6 @@ from app.core.exceptions.validation import (
     TypeCoercionError,
     ValidationError,
 )
-
-# --- Startup / lifecycle --------------------------------------------------
 from app.core.exceptions.startup import (
     BootstrapError,
     FeatureGroupInitError,
@@ -149,8 +96,6 @@ from app.core.exceptions.startup import (
     StartupError,
     StartupTimeoutError,
 )
-
-# --- Runtime --------------------------------------------------------------
 from app.core.exceptions.runtime import (
     ExternalServiceError,
     ModelInferenceError,
@@ -164,10 +109,6 @@ from app.core.exceptions.runtime import (
     ToolExecutionError,
 )
 
-
-# --------------------------------------------------------------------------- #
-# Category -> base-class registry (for generic handling / routing)
-# --------------------------------------------------------------------------- #
 _CATEGORY_BASE: dict[ErrorCategory, Type[AIOSError]] = {
     ErrorCategory.CONFIGURATION: ConfigurationError,
     ErrorCategory.DEPENDENCY: DependencyError,
@@ -184,21 +125,10 @@ _CATEGORY_BASE: dict[ErrorCategory, Type[AIOSError]] = {
 
 
 def get_exception_for_category(category: ErrorCategory) -> Type[AIOSError]:
-    """Return the base exception class associated with a category.
-
-    Used by the Event Bus and Recovery Manager to reason about errors
-    generically (e.g. "is this a SECURITY error?") without importing every
-    concrete subclass.
-    """
     return _CATEGORY_BASE.get(category, AIOSError)
 
 
 def is_fatal(exc: BaseException) -> bool:
-    """Convenience predicate: True if ``exc`` is a fatal AIOS error.
-
-    Non-AIOS exceptions are treated conservatively as non-fatal here; the
-    global handler decides how to wrap them.
-    """
     return isinstance(exc, AIOSError) and exc.is_fatal()
 
 
@@ -208,12 +138,6 @@ def wrap_exception(
     category: ErrorCategory = ErrorCategory.RUNTIME,
     message: str | None = None,
 ) -> AIOSError:
-    """Wrap an arbitrary exception into an :class:`AIOSError` subclass.
-
-    Already-AIOS exceptions are returned unchanged. Everything else is wrapped
-    in the category's base class, preserving the original via ``cause`` so the
-    global error handler always deals with a uniform, structured error type.
-    """
     if isinstance(exc, AIOSError):
         return exc
     base_cls = get_exception_for_category(category)
@@ -224,11 +148,9 @@ def wrap_exception(
 
 
 __all__ = [
-    # foundation
     "AIOSError",
     "ErrorCategory",
     "ErrorSeverity",
-    # configuration
     "ConfigurationError",
     "ConfigFileNotFoundError",
     "ConfigParseError",
@@ -237,7 +159,6 @@ __all__ = [
     "InvalidConfigValueError",
     "EnvironmentVariableError",
     "ConfigMergeError",
-    # dependency
     "DependencyError",
     "DependencyNotFoundError",
     "DependencyResolutionError",
@@ -245,7 +166,6 @@ __all__ = [
     "DuplicateRegistrationError",
     "ProviderError",
     "ScopeError",
-    # database
     "DatabaseError",
     "ConnectionError",
     "TransactionError",
@@ -256,7 +176,6 @@ __all__ = [
     "EncryptionKeyError",
     "VectorStoreError",
     "KnowledgeGraphError",
-    # state
     "StateError",
     "InvalidStateTransitionError",
     "InvalidStateError",
@@ -264,7 +183,6 @@ __all__ = [
     "StateSnapshotError",
     "StateValidationError",
     "StateLockError",
-    # event
     "EventError",
     "EventPublishError",
     "EventSubscriptionError",
@@ -272,7 +190,6 @@ __all__ = [
     "EventSerializationError",
     "UnknownEventTypeError",
     "EventDispatchError",
-    # queue
     "QueueError",
     "QueueFullError",
     "QueueEmptyError",
@@ -281,7 +198,6 @@ __all__ = [
     "InvalidPriorityError",
     "QueueInterruptedError",
     "QueueOverflowError",
-    # security
     "SecurityError",
     "AuthenticationError",
     "AuthorizationError",
@@ -293,7 +209,6 @@ __all__ = [
     "SandboxViolationError",
     "EncryptionError",
     "AuditIntegrityError",
-    # validation
     "ValidationError",
     "SchemaValidationError",
     "ParameterValidationError",
@@ -301,7 +216,6 @@ __all__ = [
     "ConstraintViolationError",
     "MissingFieldError",
     "ToolValidationError",
-    # startup
     "StartupError",
     "InitializationError",
     "BootstrapError",
@@ -310,7 +224,6 @@ __all__ = [
     "PhaseInitializationError",
     "StartupTimeoutError",
     "ShutdownError",
-    # runtime
     "RuntimeError_",
     "OperationError",
     "TimeoutError_",
@@ -321,7 +234,6 @@ __all__ = [
     "ExternalServiceError",
     "NotSupportedError",
     "RecoveryError",
-    # helpers
     "get_exception_for_category",
     "is_fatal",
     "wrap_exception",
