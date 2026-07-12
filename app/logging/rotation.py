@@ -1,13 +1,3 @@
-"""
-Log rotation configuration and handler creation.
-
-Supports two rotation strategies:
-    1. SIZE  — rotate when file exceeds max_bytes, keep N backups
-    2. TIME  — rotate at fixed intervals (midnight, hourly, daily, weekly)
-
-Both strategies compress rotated files and are thread-safe.
-"""
-
 import gzip
 import logging
 import os
@@ -20,41 +10,17 @@ from typing import Any, List, Optional
 
 
 class RotationType(Enum):
-    """Strategy for when to rotate a log file."""
     SIZE = "size"
     TIME = "time"
 
 
 @dataclass
 class RotationConfig:
-    """
-    Declarative configuration for log file rotation.
-
-    Size-based fields (used when rotation_type == SIZE):
-        max_bytes    : rotate when file reaches this size (default 10 MB)
-        backup_count : number of rotated archives to keep
-
-    Time-based fields (used when rotation_type == TIME):
-        when         : 'S' seconds, 'M' minutes, 'H' hours,
-                       'D' days, 'W0'-'W6' weekly, 'midnight'
-        interval     : number of units (default 1)
-        backup_count : number of rotated archives to keep
-
-    Common:
-        compress     : gzip rotated files (default True)
-        encoding     : file encoding (default utf-8)
-    """
     rotation_type: RotationType = RotationType.SIZE
-
-    # Size-based
     max_bytes: int = 10 * 1024 * 1024  # 10 MB
     backup_count: int = 5
-
-    # Time-based
     when: str = "midnight"
     interval: int = 1
-
-    # Common
     compress: bool = True
     encoding: str = "utf-8"
 
@@ -68,8 +34,6 @@ class RotationConfig:
 
 
 class _CompressingRotatingFileHandler(RotatingFileHandler):
-    """RotatingFileHandler that gzip-compresses rotated files."""
-
     compress: bool = True
 
     def rotate(self, source: str, dest: str) -> None:
@@ -84,8 +48,6 @@ class _CompressingRotatingFileHandler(RotatingFileHandler):
 
 
 class _CompressingTimedRotatingFileHandler(TimedRotatingFileHandler):
-    """TimedRotatingFileHandler that gzip-compresses rotated files."""
-
     compress: bool = True
 
     def rotate(self, source: str, dest: str) -> None:
@@ -104,18 +66,6 @@ def create_rotating_handler(
     config: RotationConfig,
     formatter: Optional[logging.Formatter] = None,
 ) -> logging.Handler:
-    """
-    Create a rotating file handler from a RotationConfig.
-
-    Args:
-        file_path  : path to the active log file
-        config     : rotation configuration
-        formatter  : optional formatter to attach
-
-    Returns:
-        A configured logging.Handler ready to be added to a logger.
-    """
-    # Ensure parent directory exists
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
 
     if config.rotation_type == RotationType.SIZE:
