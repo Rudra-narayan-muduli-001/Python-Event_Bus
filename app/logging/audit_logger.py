@@ -1,49 +1,3 @@
-"""
-Tamper-evident audit logger with HMAC-SHA256 hash chaining.
-
-This module implements the audit logging layer referenced in
-Feature Group 6 (Security & Permission System), Layer 9 — Audit &
-Tamper Protection.
-
-Design Goals
-------------
-1. **Integrity**   : Every entry is cryptographically signed. Any
-   deletion, insertion, or modification is detectable.
-2. **Chaining**    : Each entry's HMAC incorporates the previous
-   entry's HMAC, forming a hash chain. Removing or reordering
-   entries breaks the chain.
-3. **Offline**     : No external services required. Uses only the
-   Python standard library (hmac, hashlib, json, logging).
-4. **Performance** : HMAC-SHA256 of a short message is <0.1 ms.
-   Meets the <10 ms log-write target from the FG6 performance table.
-5. **Rotation-safe**: The chain resets on rotation but the previous
-   chain's final HMAC is carried forward as the genesis seed.
-
-Entry Format
-------------
-Each audit log line is a JSON object on a single line:
-
-    {
-        "seq": 1,
-        "timestamp": "2026-07-03T02:19:11.123Z",
-        "level": "INFO",
-        "logger": "security.audit",
-        "event": "AUTH_SUCCESS",
-        "user": "admin",
-        "action": "login",
-        "result": "success",
-        "risk_level": "low",
-        "details": {...},
-        "prev_hmac": "0000...0000",
-        "hmac": "a3f2...e91c"
-    }
-
-Verification
-------------
-Call AuditLogger.verify_log_file(path, key) to validate the entire
-chain. Returns a VerificationResult with details of any tampering.
-"""
-
 import hashlib
 import hmac
 import json
@@ -54,35 +8,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
 from app.logging.formatters import BaseFormatter
 from app.logging.logger import LogLevel
 from app.logging.rotation import RotationConfig, RotationType, create_rotating_handler
 
-
-# ──────────────────────────────────────────────────────────────────────
-#  Data Models
-# ──────────────────────────────────────────────────────────────────────
-
 @dataclass
 class AuditEntry:
-    """
-    Structured representation of a single audit log entry.
-
-    Attributes:
-        seq        : monotonically increasing sequence number
-        timestamp  : ISO 8601 UTC timestamp with milliseconds
-        level      : log level name (INFO, WARNING, ERROR, CRITICAL)
-        logger     : logger name
-        event      : event type (e.g., AUTH_SUCCESS, PERMISSION_DENIED)
-        user       : user identifier (or "system")
-        action     : action that was performed or attempted
-        result     : outcome ("success", "failure", "denied", "error")
-        risk_level : risk assessment at time of event
-        details    : arbitrary additional context
-        prev_hmac  : HMAC of the previous entry (hex string)
-        hmac       : HMAC of this entry (hex string, computed on signing)
-    """
     seq: int
     timestamp: str
     level: str
@@ -97,7 +28,6 @@ class AuditEntry:
     hmac: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serialize to an ordered dict for JSON line output."""
         return {
             "seq": self.seq,
             "timestamp": self.timestamp,
@@ -114,12 +44,10 @@ class AuditEntry:
         }
 
     def to_json_line(self) -> str:
-        """Serialize to a single-line JSON string."""
         return json.dumps(self.to_dict(), default=str, ensure_ascii=False)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AuditEntry":
-        """Deserialize from a dict (parsed JSON line)."""
         return cls(
             seq=data.get("seq", 0),
             timestamp=data.get("timestamp", ""),
@@ -138,17 +66,6 @@ class AuditEntry:
 
 @dataclass
 class VerificationResult:
-    """
-    Result of verifying an audit log file's integrity.
-
-    Attributes:
-        is_valid         : True if the entire chain is intact
-        total_entries    : number of entries checked
-        verified_entries : number of entries with valid HMACs
-        broken_at        : sequence number where the chain broke (None if valid)
-        broken_reason    : description of why the chain broke
-        errors           : list of per-entry errors
-    """
     is_valid: bool = True
     total_entries: int = 0
     verified_entries: int = 0
@@ -156,20 +73,7 @@ class VerificationResult:
     broken_reason: str = ""
     errors: List[str] = field(default_factory=list)
 
-
-# ──────────────────────────────────────────────────────────────────────
-#  Audit Formatter
-# ──────────────────────────────────────────────────────────────────────
-
 class AuditFormatter(BaseFormatter):
-    """
-    Formatter that serializes AuditEntry objects as signed JSON lines.
-
-    This formatter expects the LogRecord to have an `audit_entry`
-    attribute (set via the `extra` parameter). It extracts the entry
-    and renders it as a single-line JSON string.
-    """
-
     def __init__(self, use_colors: bool = False) -> None:
         super().__init__(use_colors=False)
 
@@ -177,8 +81,6 @@ class AuditFormatter(BaseFormatter):
         entry: Optional[AuditEntry] = getattr(record, "audit_entry", None)
         if entry is not None:
             return entry.to_json_line()
-
-        # Fallback: format as a standard JSON log line
         payload = {
             "timestamp": self._format_timestamp(record),
             "level": record.levelname,
@@ -192,52 +94,7 @@ class AuditFormatter(BaseFormatter):
             payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload, default=str, ensure_ascii=False)
 
-
-# ──────────────────────────────────────────────────────────────────────
-#  Audit Logger
-# ──────────────────────────────────────────────────────────────────────
-
 class AuditLogger:
-    """
-    Tamper-evident audit logger with HMAC-SHA256 hash chaining.
-
-    Each log entry is signed with HMAC-SHA256 using a secret key.
-    The signature incorporates the previous entry's signature, creating
-    a chain where any tampering (deletion, insertion, modification)
-    is detectable during verification.
-
-    Thread Safety
-    -------------
-    All signing and writing operations are protected by a lock to
-    ensure sequence numbers and HMAC chains remain consistent under
-    concurrent access from multiple threads (e.g., the voice pipeline,
-    security engine, and task manager all auditing simultaneously).
-
-    Usage
-    -----
-        key = os.urandom(32)  # Generate once, store via DPAPI
-        audit = AuditLogger(
-            name="security.audit",
-            file_path="logs/audit/audit.log",
-            hmac_key=key,
-        )
-
-        audit.log(
-            event="AUTH_SUCCESS",
-            user="admin",
-            action="voice_login",
-            result="success",
-            risk_level="low",
-            details={"method": "speaker_verification", "confidence": 0.97},
-        )
-
-        # Verify integrity later
-        result = AuditLogger.verify_log_file("logs/audit/audit.log", key)
-        if not result.is_valid:
-            print(f"TAMPER DETECTED at entry {result.broken_at}: {result.broken_reason}")
-    """
-
-    # Genesis HMAC for the first entry in a chain
     _GENESIS_HMAC = "0" * 64
 
     def __init__(
@@ -250,18 +107,6 @@ class AuditLogger:
         backup_count: int = 10,
         compress: bool = True,
     ) -> None:
-        """
-        Initialize the audit logger.
-
-        Args:
-            name        : logger name
-            file_path   : path to the audit log file
-            hmac_key    : secret key for HMAC-SHA256 signing
-            level       : minimum log level
-            max_bytes   : rotation threshold (default 10 MB)
-            backup_count: rotated archives to keep (default 10)
-            compress    : gzip rotated files
-        """
         if not hmac_key or len(hmac_key) < 16:
             raise ValueError(
                 "hmac_key must be at least 16 bytes for adequate security"
@@ -272,18 +117,10 @@ class AuditLogger:
         self._hmac_key = hmac_key
         self._level = int(level)
         self._closed = False
-
-        # Thread-safe signing and writing
         self._lock = threading.Lock()
-
-        # Sequence counter and chain state
         self._seq: int = 0
         self._last_hmac: str = self._GENESIS_HMAC
-
-        # Initialize the chain from existing log file (if present)
         self._init_chain_from_existing()
-
-        # Create the underlying logger and handler
         self._logger = logging.getLogger(name)
         self._logger.setLevel(self._level)
         self._logger.propagate = False
@@ -302,17 +139,7 @@ class AuditLogger:
             formatter=AuditFormatter(),
         )
         self._logger.addHandler(handler)
-
-    # ── chain initialization ─────────────────────────────────────────
-
     def _init_chain_from_existing(self) -> None:
-        """
-        Recover chain state from an existing log file.
-
-        If the file already exists and contains entries, read the last
-        valid entry to restore the sequence counter and HMAC chain.
-        This ensures continuity across application restarts.
-        """
         path = Path(self._file_path)
         if not path.exists() or path.stat().st_size == 0:
             return
@@ -338,23 +165,7 @@ class AuditLogger:
 
         self._seq = last_seq
         self._last_hmac = last_hmac
-
-    # ── HMAC computation ──────────────────────────────────────────────
-
     def _compute_hmac(self, entry: AuditEntry) -> str:
-        """
-        Compute the HMAC-SHA256 signature for an audit entry.
-
-        The signed payload is a deterministic JSON string containing
-        all fields EXCEPT the hmac field itself, concatenated with
-        the previous entry's HMAC.
-
-        This ensures:
-            - Any field modification changes the HMAC
-            - Reordering breaks the prev_hmac chain
-            - Deletion breaks the chain at the gap
-        """
-        # Build the signing payload: all fields except hmac
         payload_dict = {
             "seq": entry.seq,
             "timestamp": entry.timestamp,
@@ -380,8 +191,6 @@ class AuditLogger:
             hashlib.sha256,
         ).hexdigest()
 
-    # ── public logging API ────────────────────────────────────────────
-
     def log(
         self,
         event: str,
@@ -392,27 +201,10 @@ class AuditLogger:
         details: Optional[Dict[str, Any]] = None,
         level: LogLevel = LogLevel.INFO,
     ) -> AuditEntry:
-        """
-        Write a signed audit entry to the log file.
-
-        Args:
-            event      : event type (e.g., AUTH_SUCCESS, PERMISSION_DENIED,
-                         RISK_ESCALATION, TOOL_VALIDATION_FAILED)
-            user       : user identifier
-            action     : action performed or attempted
-            result     : outcome (success, failure, denied, error)
-            risk_level : risk level at time of event (low, medium, high, critical)
-            details    : additional context (dict, JSON-serializable)
-            level      : log level for this entry
-
-        Returns:
-            The signed AuditEntry that was written.
-        """
         if self._closed:
             raise RuntimeError("AuditLogger is closed")
 
         with self._lock:
-            # Build the entry
             self._seq += 1
             now = datetime.now(timezone.utc)
             timestamp = now.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
@@ -430,22 +222,14 @@ class AuditLogger:
                 details=details or {},
                 prev_hmac=self._last_hmac,
             )
-
-            # Sign the entry
             entry.hmac = self._compute_hmac(entry)
-
-            # Update chain state
             self._last_hmac = entry.hmac
-
-            # Write to the underlying logger
             self._logger.info(
                 entry.to_json_line(),
                 extra={"audit_entry": entry},
             )
 
             return entry
-
-    # Convenience methods for common audit event types
 
     def auth_success(
         self,
@@ -454,7 +238,6 @@ class AuditLogger:
         confidence: float = 0.0,
         **extra: Any,
     ) -> AuditEntry:
-        """Log a successful authentication event."""
         details = {"method": method, "confidence": confidence, **extra}
         return self.log(
             event="AUTH_SUCCESS",
@@ -472,7 +255,6 @@ class AuditLogger:
         reason: str = "",
         **extra: Any,
     ) -> AuditEntry:
-        """Log a failed authentication event."""
         details = {"method": method, "reason": reason, **extra}
         return self.log(
             event="AUTH_FAILURE",
@@ -491,7 +273,6 @@ class AuditLogger:
         permission: str = "",
         **extra: Any,
     ) -> AuditEntry:
-        """Log a permission denial event."""
         details = {
             "resource": resource,
             "permission": permission,
@@ -514,7 +295,6 @@ class AuditLogger:
         risk_level: str = "high",
         **extra: Any,
     ) -> AuditEntry:
-        """Log a risk escalation event."""
         details = {"command": command, **extra}
         return self.log(
             event="RISK_ESCALATION",
@@ -532,7 +312,6 @@ class AuditLogger:
         reason: str = "",
         **extra: Any,
     ) -> AuditEntry:
-        """Log a blocked prompt injection or malicious input."""
         details = {"reason": reason, **extra}
         return self.log(
             event="PROMPT_BLOCKED",
@@ -552,7 +331,6 @@ class AuditLogger:
         execution_time: float = 0.0,
         **extra: Any,
     ) -> AuditEntry:
-        """Log a tool execution event."""
         details = {
             "tool": tool,
             "status": status,
@@ -575,7 +353,6 @@ class AuditLogger:
         reason: str = "",
         **extra: Any,
     ) -> AuditEntry:
-        """Log a rollback event."""
         details = {"action_id": action_id, "reason": reason, **extra}
         return self.log(
             event="ROLLBACK_EXECUTED",
@@ -586,27 +363,11 @@ class AuditLogger:
             details=details,
         )
 
-    # ── verification ──────────────────────────────────────────────────
-
     @staticmethod
     def verify_log_file(
         file_path: str,
         hmac_key: bytes,
     ) -> VerificationResult:
-        """
-        Verify the integrity of an audit log file.
-
-        Reads every entry, recomputes each HMAC, and checks that the
-        chain is unbroken (each entry's prev_hmac matches the previous
-        entry's hmac).
-
-        Args:
-            file_path : path to the audit log file
-            hmac_key  : the same key used to sign the entries
-
-        Returns:
-            VerificationResult with details of any tampering found.
-        """
         result = VerificationResult()
         path = Path(file_path)
 
@@ -642,8 +403,6 @@ class AuditLogger:
                         return result
 
                     entry = AuditEntry.from_dict(data)
-
-                    # Check sequence continuity
                     expected_seq += 1
                     if entry.seq != expected_seq:
                         result.is_valid = False
@@ -656,8 +415,6 @@ class AuditLogger:
                             f"Entry seq={entry.seq}: sequence discontinuity"
                         )
                         return result
-
-                    # Check chain linkage
                     if entry.prev_hmac != expected_prev:
                         result.is_valid = False
                         result.broken_at = entry.seq
@@ -672,7 +429,6 @@ class AuditLogger:
                         )
                         return result
 
-                    # Recompute and verify HMAC
                     recomputed = AuditLogger._compute_hmac_static(
                         entry, hmac_key
                     )
@@ -689,8 +445,6 @@ class AuditLogger:
                             f"got {entry.hmac[:16]}...)"
                         )
                         return result
-
-                    # Advance chain
                     expected_prev = entry.hmac
                     result.verified_entries += 1
 
@@ -703,11 +457,6 @@ class AuditLogger:
 
     @staticmethod
     def _compute_hmac_static(entry: AuditEntry, hmac_key: bytes) -> str:
-        """
-        Static HMAC computation for verification (no instance state).
-
-        Must produce identical output to AuditLogger._compute_hmac().
-        """
         payload_dict = {
             "seq": entry.seq,
             "timestamp": entry.timestamp,
@@ -732,9 +481,6 @@ class AuditLogger:
             payload.encode("utf-8"),
             hashlib.sha256,
         ).hexdigest()
-
-    # ── properties ────────────────────────────────────────────────────
-
     @property
     def name(self) -> str:
         return self._name
@@ -745,24 +491,18 @@ class AuditLogger:
 
     @property
     def sequence(self) -> int:
-        """Current sequence number (last written entry)."""
         with self._lock:
             return self._seq
 
     @property
     def last_hmac(self) -> str:
-        """HMAC of the most recently written entry."""
         with self._lock:
             return self._last_hmac
 
     @property
     def is_closed(self) -> bool:
         return self._closed
-
-    # ── lifecycle ─────────────────────────────────────────────────────
-
     def flush(self) -> None:
-        """Flush all handlers' buffers to disk."""
         for handler in self._logger.handlers:
             try:
                 handler.flush()
@@ -770,7 +510,6 @@ class AuditLogger:
                 pass
 
     def close(self) -> None:
-        """Flush and close all handlers. Call during shutdown."""
         if self._closed:
             return
         self._closed = True
