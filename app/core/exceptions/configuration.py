@@ -1,24 +1,6 @@
-# app/core/exceptions/configuration.py
-"""
-Configuration-layer exceptions.
-
-Raised by the ``app/core/configs`` package (environment, paths, defaults,
-loader, validator, manager) when configuration cannot be resolved, parsed, or
-validated. These are almost always surfaced during Phase 0, before feature
-groups start, so most default to non-recoverable / high severity: a broken
-config means the system must not silently proceed in an unknown state.
-
-Dependency order
-----------------
-Depends only on ``base.py``.
-"""
-
 from __future__ import annotations
-
 from typing import Any, Iterable, Mapping, Optional
-
 from app.core.exceptions.base import AIOSError, ErrorCategory, ErrorSeverity
-
 __all__ = [
     "ConfigurationError",
     "ConfigFileNotFoundError",
@@ -32,15 +14,11 @@ __all__ = [
 
 
 class ConfigurationError(AIOSError):
-    """Base class for all configuration failures."""
-
     default_category = ErrorCategory.CONFIGURATION
     default_severity = ErrorSeverity.CRITICAL
 
 
 class ConfigFileNotFoundError(ConfigurationError):
-    """A required configuration file is missing from disk."""
-
     def __init__(self, path: Any, **kwargs: Any) -> None:
         super().__init__(
             f"Configuration file not found: {path}",
@@ -51,8 +29,6 @@ class ConfigFileNotFoundError(ConfigurationError):
 
 
 class ConfigParseError(ConfigurationError):
-    """A configuration file exists but could not be parsed (e.g. bad YAML)."""
-
     def __init__(self, path: Any, cause: Optional[BaseException] = None, **kwargs: Any) -> None:
         super().__init__(
             f"Failed to parse configuration file: {path}",
@@ -64,11 +40,6 @@ class ConfigParseError(ConfigurationError):
 
 
 class ConfigValidationError(ConfigurationError):
-    """The merged configuration failed schema validation.
-
-    Carries the list of individual validation error strings produced by the
-    validator so they can be logged and reported together.
-    """
 
     default_severity = ErrorSeverity.FATAL
 
@@ -86,8 +57,6 @@ class ConfigValidationError(ConfigurationError):
 
 
 class MissingConfigKeyError(ConfigurationError):
-    """A required key is absent from the resolved configuration tree."""
-
     def __init__(self, key: str, **kwargs: Any) -> None:
         super().__init__(
             f"Required configuration key is missing: '{key}'",
@@ -98,8 +67,6 @@ class MissingConfigKeyError(ConfigurationError):
 
 
 class InvalidConfigValueError(ConfigurationError):
-    """A configuration value is present but outside its allowed domain."""
-
     def __init__(
         self,
         key: str,
@@ -118,11 +85,6 @@ class InvalidConfigValueError(ConfigurationError):
 
 
 class EnvironmentVariableError(ConfigurationError):
-    """A required environment variable is missing or malformed.
-
-    Mirrors ``configs.environment.EnvVarError`` at the exception-hierarchy
-    level so bootstrap can catch a single configuration base class.
-    """
 
     def __init__(self, variable: str, reason: Optional[str] = None, **kwargs: Any) -> None:
         suffix = f": {reason}" if reason else ""
@@ -135,8 +97,6 @@ class EnvironmentVariableError(ConfigurationError):
 
 
 class ConfigMergeError(ConfigurationError):
-    """The layered configuration merge chain produced an inconsistent result."""
-
     def __init__(self, message: str, *, layers: Optional[Mapping[str, Any]] = None, **kwargs: Any) -> None:
         super().__init__(message, code="CONFIG_MERGE_ERROR", **kwargs)
         if layers:
