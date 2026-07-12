@@ -1,51 +1,21 @@
-"""
-Centralized state definitions for AIOS.
-
-Every subsystem drives a state machine (see each feature group's
-`state/state_machine.py`). This module is the single source of truth for the
-state *vocabulary* so that logging, persistence, telemetry, and the GUI status
-layer all speak the same language.
-
-Design rules:
-    * `str`-based enums → JSON/SQLite/YAML friendly, human-readable in logs.
-    * Immutable transition maps frozen with MappingProxyType.
-    * No I/O, no logic beyond pure helpers for transition validation.
-    * Depends only on the standard library (import-safe, no cycles).
-"""
-
 from __future__ import annotations
-
 from enum import Enum
 from types import MappingProxyType
 from typing import Final, Mapping, FrozenSet
 
 
-# ---------------------------------------------------------------------------
-# Base
-# ---------------------------------------------------------------------------
-
-
 class BaseState(str, Enum):
-    """Base class for all state enums. Enables uniform helpers."""
 
-    def __str__(self) -> str:  # pragma: no cover - trivial
+    def __str__(self) -> str:  
         return self.value
 
-
-# ---------------------------------------------------------------------------
-# Application Lifecycle State (app/state/lifecycle_states.py)
-# ---------------------------------------------------------------------------
-
-
 class AppState(BaseState):
-    """Top-level application lifecycle state."""
-
     CREATED = "created"
     BOOTSTRAPPING = "bootstrapping"
     INITIALIZING = "initializing"
     STARTING = "starting"
     RUNNING = "running"
-    DEGRADED = "degraded"       # Running with one or more failed subsystems
+    DEGRADED = "degraded"      
     PAUSING = "pausing"
     PAUSED = "paused"
     RESUMING = "resuming"
@@ -75,14 +45,7 @@ APP_STATE_TRANSITIONS: Final[Mapping[AppState, FrozenSet[AppState]]] = MappingPr
     }
 )
 
-
-# ---------------------------------------------------------------------------
-# FG1 — Voice Interaction State
-# ---------------------------------------------------------------------------
-
-
 class VoiceState(BaseState):
-    """Voice pipeline state (FG1 Section 7)."""
 
     IDLE = "idle"
     WAITING_WAKE = "waiting_wake"
@@ -96,14 +59,7 @@ class VoiceState(BaseState):
     DEAUTHORIZED = "deauthorized"
     SHUTDOWN = "shutdown"
 
-
-# ---------------------------------------------------------------------------
-# FG2 — AI Brain State (FG2 Section 31)
-# ---------------------------------------------------------------------------
-
-
 class BrainState(BaseState):
-    """AI Brain orchestration state."""
 
     OFFLINE = "offline"
     STARTING = "starting"
@@ -123,14 +79,7 @@ class BrainState(BaseState):
     ERROR = "error"
     SHUTDOWN = "shutdown"
 
-
-# ---------------------------------------------------------------------------
-# FG6 — Security State (FG6 "State Management")
-# ---------------------------------------------------------------------------
-
-
 class SecurityState(BaseState):
-    """Security subsystem state."""
 
     STARTING = "starting"
     VERIFYING_IDENTITY = "verifying_identity"
@@ -147,13 +96,7 @@ class SecurityState(BaseState):
     SHUTDOWN = "shutdown"
 
 
-# ---------------------------------------------------------------------------
-# FG3 / FG9 — Task & Action State
-# ---------------------------------------------------------------------------
-
-
 class TaskState(BaseState):
-    """Task lifecycle (FG2 Task Manager / FG9 agents)."""
 
     QUEUED = "queued"
     RUNNING = "running"
@@ -163,21 +106,18 @@ class TaskState(BaseState):
     CANCELLED = "cancelled"
     FAILED = "failed"
 
-
-# Terminal task states — no further transition allowed.
 TERMINAL_TASK_STATES: Final[FrozenSet[TaskState]] = frozenset(
     {TaskState.COMPLETED, TaskState.CANCELLED, TaskState.FAILED}
 )
 
 
 class ActionState(BaseState):
-    """Windows Control action execution state (FG3)."""
 
     PENDING = "pending"
     QUEUED = "queued"
-    EXECUTING_NATIVE = "executing_native"     # Tier 1: pywin32 / pywinauto
-    EXECUTING_VISION = "executing_vision"     # Tier 2: YOLO + OCR
-    EXECUTING_VLM = "executing_vlm"           # Tier 3: GoClick / Florence-2
+    EXECUTING_NATIVE = "executing_native"     
+    EXECUTING_VISION = "executing_vision"     
+    EXECUTING_VLM = "executing_vlm"           
     VERIFYING = "verifying"
     SUCCEEDED = "succeeded"
     RETRYING = "retrying"
@@ -185,13 +125,7 @@ class ActionState(BaseState):
     FAILED = "failed"
 
 
-# ---------------------------------------------------------------------------
-# FG5 — GUI: Companion & Cursor State
-# ---------------------------------------------------------------------------
-
-
 class GuiMode(BaseState):
-    """Active GUI mode (FG5)."""
 
     DASHBOARD = "dashboard"
     COMPANION_2D = "companion_2d"
@@ -200,7 +134,6 @@ class GuiMode(BaseState):
 
 
 class CharacterState(BaseState):
-    """Desktop companion character state (FG5)."""
 
     IDLE = "idle"
     PLAYING = "playing"
@@ -212,23 +145,12 @@ class CharacterState(BaseState):
     SLEEPING = "sleeping"
 
 
-# ---------------------------------------------------------------------------
-# Connectivity State (drives online/offline routing in FG2/FG4)
-# ---------------------------------------------------------------------------
-
-
 class ConnectivityState(BaseState):
-    """Network availability, used by Router and Search Manager."""
 
     ONLINE = "online"
     OFFLINE = "offline"
-    LIMITED = "limited"     # Reachable but degraded / metered
+    LIMITED = "limited"     
     UNKNOWN = "unknown"
-
-
-# ---------------------------------------------------------------------------
-# Registry of all state machines with their initial states
-# ---------------------------------------------------------------------------
 
 INITIAL_STATES: Final[Mapping[str, BaseState]] = MappingProxyType(
     {
@@ -244,30 +166,12 @@ INITIAL_STATES: Final[Mapping[str, BaseState]] = MappingProxyType(
     }
 )
 
-
-# ---------------------------------------------------------------------------
-# Pure helpers
-# ---------------------------------------------------------------------------
-
-
 def can_transition(current: AppState, target: AppState) -> bool:
-    """Return True if `target` is a legal successor of `current` for AppState.
-
-    Only the application lifecycle exposes a hard transition table here; other
-    subsystems validate transitions inside their own `transitions.py` where the
-    rules are richer and event-driven.
-    """
     return target in APP_STATE_TRANSITIONS.get(current, frozenset())
 
 
 def is_terminal_task_state(state: TaskState) -> bool:
-    """Return True if a task can no longer change state."""
     return state in TERMINAL_TASK_STATES
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 
 __all__ = [
     "BaseState",
