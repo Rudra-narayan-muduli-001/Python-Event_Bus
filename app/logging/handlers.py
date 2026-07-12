@@ -1,37 +1,11 @@
-"""
-Custom log handlers for the AIOS logging system.
-
-Handlers determine WHERE log records go. This module provides:
-
-    - ConsoleHandler         : stdout for INFO-, stderr for WARNING+
-    - FileLogHandler         : simple append-mode file handler
-    - RotatingFileLogHandler : size/time-based rotating file handler
-    - CompositeHandler       : fan-out to multiple sub-handlers
-
-All handlers accept an optional formatter and list of filters
-at construction time for declarative configuration.
-"""
-
 import logging
 import sys
 from pathlib import Path
 from typing import List, Optional
-
 from app.logging.formatters import BaseFormatter, ConsoleFormatter, DetailedFileFormatter
 from app.logging.rotation import RotationConfig, create_rotating_handler
 
-
 class ConsoleHandler(logging.StreamHandler):
-    """
-    Stream handler that routes to stdout or stderr based on level.
-
-    INFO and below → stdout
-    WARNING and above → stderr
-
-    This separation lets terminal users see errors even when
-    stdout is piped or redirected.
-    """
-
     def __init__(
         self,
         formatter: Optional[logging.Formatter] = None,
@@ -51,9 +25,6 @@ class ConsoleHandler(logging.StreamHandler):
                 self.addFilter(f)
 
     def emit(self, record: logging.LogRecord) -> None:
-        """
-        Route the record to the appropriate stream based on severity.
-        """
         if record.levelno >= logging.WARNING:
             self.stream = self._stderr
         else:
@@ -62,13 +33,6 @@ class ConsoleHandler(logging.StreamHandler):
 
 
 class FileLogHandler(logging.FileHandler):
-    """
-    Simple append-mode file handler with directory creation.
-
-    Use this for logs that don't need rotation (short-lived sessions,
-    crash dumps, etc.). For long-running logs, use RotatingFileLogHandler.
-    """
-
     def __init__(
         self,
         file_path: str,
@@ -95,14 +59,6 @@ class FileLogHandler(logging.FileHandler):
 
 
 class RotatingFileLogHandler(logging.Handler):
-    """
-    Rotating file handler wrapping the rotation module.
-
-    Delegates to either a size-based or time-based rotating handler
-    based on the provided RotationConfig. Rotated files are optionally
-    gzip-compressed.
-    """
-
     def __init__(
         self,
         file_path: str,
@@ -142,20 +98,6 @@ class RotatingFileLogHandler(logging.Handler):
 
 
 class CompositeHandler(logging.Handler):
-    """
-    Fan-out handler that forwards every record to multiple sub-handlers.
-
-    Useful when a single logger needs to write to both console and file
-    with different formatters for each destination.
-
-    Example:
-        composite = CompositeHandler([
-            ConsoleHandler(use_colors=True),
-            RotatingFileLogHandler("logs/app.log"),
-        ])
-        logger.addHandler(composite)
-    """
-
     def __init__(
         self,
         handlers: List[logging.Handler],
