@@ -57,7 +57,6 @@ class Logger:
     def effective_level(self) -> LogLevel:
         return LogLevel(self._logger.getEffectiveLevel())
     def set_level(self, level: LogLevel) -> None:
-        """Change the minimum log level at runtime."""
         self._logger.setLevel(int(level))
         self._config.level = level
     def bind(self, **context: Any) -> "Logger":
@@ -129,7 +128,6 @@ class Logger:
         if flt in self._config.filters:
             self._config.filters.remove(flt)
     def close(self) -> None:
-        """Flush and close all handlers. Call on shutdown."""
         for handler in self._logger.handlers[:]:
             try:
                 handler.flush()
