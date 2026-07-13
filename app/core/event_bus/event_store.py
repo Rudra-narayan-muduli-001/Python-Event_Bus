@@ -1,34 +1,10 @@
-# app/core/event_bus/event_store.py
-"""
-Durable, queryable event store for the AIOS Event Bus.
-======================================================
-Every event the bus accepts is offered to the store. The store provides:
-
-* a bounded **in-memory ring buffer** for fast "recent events" queries used by
-  the FG5 developer dashboard and live debugging;
-* optional **SQLite persistence** (matching the core database stack) for audit,
-  crash-recovery replay, and correlation-chain reconstruction;
-* **query** helpers by name, category, correlation id, and time window;
-* **replay** of persisted events back through a sink (e.g. the bus) so
-  interrupted flows can be resumed after a restart.
-
-Round-trip fidelity is delegated to :class:`EventSerializer`, so a replayed
-event keeps its original identity, timing, and lifecycle status rather than
-being re-stamped.
-
-Thread-safe. SQLite access uses a dedicated connection guarded by a lock, with
-WAL mode enabled to align with the recovery strategy used elsewhere in core.
-"""
-
 from __future__ import annotations
-
 import sqlite3
 import threading
 import time
 from collections import deque
 from pathlib import Path
 from typing import Any, Callable, Deque, Dict, Iterable, List, Optional
-
 from app.core.constants.events import EventCategory
 from app.core.event_bus.event_serializer import EventSerializer
 from app.core.event_bus.event_types import Event
@@ -58,18 +34,6 @@ CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp);
 
 
 class EventStore:
-    """Records events in memory and (optionally) in SQLite.
-
-    Parameters
-    ----------
-    db_path:
-        Path to the SQLite file. When ``None`` the store is memory-only.
-    buffer_size:
-        Capacity of the in-memory ring buffer of most-recent events.
-    logger:
-        Optional logger for store diagnostics.
-    """
-
     def __init__(
         self,
         db_path: Optional[str | Path] = None,
@@ -85,12 +49,11 @@ class EventStore:
         if self._db_path is not None:
             self._init_db()
 
-    # ------------------------------------------------------------- database
     def _init_db(self) -> None:
         try:
-            Path(self._db_path).parent.mkdir(parents=True, exist_ok=True)  # type: ignore[arg-type]
+            Path(self._db_path).parent.mkdir(parents=True, exist_ok=True)  
             self._conn = sqlite3.connect(
-                self._db_path, check_same_thread=False  # guarded by self._lock
+                self._db_path, check_same_thread=False  
             )
             self._conn.execute("PRAGMA journal_mode=WAL;")
             self._conn.executescript(_SCHEMA)
@@ -104,14 +67,7 @@ class EventStore:
     @property
     def persistent(self) -> bool:
         return self._conn is not None
-
-    # --------------------------------------------------------------- record
     def record(self, event: Event) -> None:
-        """Append ``event`` to the ring buffer and persist it if enabled.
-
-        Persistence failures are logged but never raised into the publish path,
-        so a store issue cannot block live event delivery.
-        """
         with self._lock:
             self._buffer.append(event)
             if self._conn is None:
@@ -137,21 +93,18 @@ class EventStore:
                     ),
                 )
                 self._conn.commit()
-            except (sqlite3.Error, Exception) as exc:  # noqa: BLE001 - never block publish
+            except (sqlite3.Error, Exception) as exc:  
                 if self._logger:
                     self._logger.error(
                         "Failed to persist event",
                         extra={"event": event.name, "event_id": event.event_id, "error": str(exc)},
                     )
 
-    # ---------------------------------------------------------------- recent
     def recent(self, limit: int = 100) -> List[Event]:
-        """Return the most recent events from the in-memory buffer."""
         with self._lock:
             items = list(self._buffer)
         return items[-limit:][::-1]
 
-    # ---------------------------------------------------------------- query
     def query(
         self,
         *,
@@ -162,10 +115,6 @@ class EventStore:
         until: Optional[float] = None,
         limit: int = 500,
     ) -> List[Event]:
-        """Query persisted events with optional filters (persistent stores only).
-
-        For memory-only stores, filters are applied to the ring buffer instead.
-        """
         if self._conn is None:
             return self._query_buffer(name, category, correlation_id, since, until, limit)
 
@@ -195,7 +144,6 @@ class EventStore:
         return [EventSerializer.deserialize(row[0]) for row in rows]
 
     def correlation_chain(self, correlation_id: str) -> List[Event]:
-        """Return every event in a flow, ordered oldest → newest."""
         events = self.query(correlation_id=correlation_id, limit=10_000)
         return sorted(events, key=lambda e: e.timestamp)
 
@@ -226,7 +174,6 @@ class EventStore:
 
         return [e for e in reversed(items) if keep(e)][:limit]
 
-    # --------------------------------------------------------------- replay
     def replay(
         self,
         sink: Callable[[Event], Any],
@@ -235,11 +182,6 @@ class EventStore:
         since: Optional[float] = None,
         name: Optional[str] = None,
     ) -> int:
-        """Re-emit persisted events through ``sink`` in chronological order.
-
-        Used by the Recovery Manager to resume interrupted flows after a
-        restart. Returns the number of events replayed.
-        """
         events = self.query(
             name=name, correlation_id=correlation_id, since=since, limit=100_000
         )
@@ -249,7 +191,7 @@ class EventStore:
             try:
                 sink(event)
                 count += 1
-            except Exception as exc:  # noqa: BLE001 - replay is best-effort
+            except Exception as exc:  
                 if self._logger:
                     self._logger.error(
                         "Replay failed for event",
@@ -259,9 +201,7 @@ class EventStore:
             self._logger.info("Replayed events", extra={"count": count})
         return count
 
-    # ----------------------------------------------------------- maintenance
     def prune(self, older_than_seconds: float) -> int:
-        """Delete persisted events older than the cutoff. Returns rows removed."""
         if self._conn is None:
             return 0
         cutoff = time.time() - older_than_seconds
@@ -274,7 +214,6 @@ class EventStore:
                 raise EventError("Event store prune failed", cause=exc) from exc
 
     def count(self) -> int:
-        """Total persisted event count (or buffer size for memory-only stores)."""
         if self._conn is None:
             with self._lock:
                 return len(self._buffer)
@@ -285,12 +224,10 @@ class EventStore:
                 raise EventError("Event store count failed", cause=exc) from exc
 
     def clear_buffer(self) -> None:
-        """Empty the in-memory ring buffer (does not touch persisted rows)."""
         with self._lock:
             self._buffer.clear()
 
     def close(self) -> None:
-        """Flush and close the SQLite connection. Call on shutdown."""
         with self._lock:
             if self._conn is not None:
                 try:
@@ -302,6 +239,6 @@ class EventStore:
     def __len__(self) -> int:
         return self.count()
 
-    def __repr__(self) -> str:  # pragma: no cover - cosmetic
+    def __repr__(self) -> str: 
         mode = "sqlite" if self.persistent else "memory"
         return f"<EventStore mode={mode} buffer={len(self._buffer)}>"
