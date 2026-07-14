@@ -1,28 +1,6 @@
-# app/dependency_injection/providers.py
-"""
-Dependency Injection Providers
-==============================
-Concrete provider strategies that implement the :class:`IProvider` contract.
-Each provider encapsulates *how* an instance is produced and *what lifetime*
-governs its caching, delegating actual storage to the container's
-:class:`ScopeManager`.
-
-Provider types
---------------
-* InstanceProvider  : wraps an already-constructed object (always the same).
-* FactoryProvider   : calls a zero/one-arg factory; lifetime configurable.
-* ClassProvider     : instantiates a class, auto-wiring constructor deps.
-
-The lifetime (SINGLETON / TRANSIENT / SCOPED) is orthogonal to the production
-mechanism, so ``FactoryProvider`` and ``ClassProvider`` both accept a
-:class:`Lifetime` and share the same caching logic via :class:`_LifetimeMixin`.
-"""
-
 from __future__ import annotations
-
 import inspect
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, get_type_hints
-
 from app.core.exceptions import ProviderError, DependencyResolutionError
 from app.dependency_injection.interfaces import IContainer, IProvider
 from app.dependency_injection.scopes import Lifetime
@@ -37,23 +15,15 @@ T = TypeVar("T")
 
 
 class _LifetimeMixin:
-    """Shared caching logic keyed by :class:`Lifetime`.
-
-    Subclasses implement :meth:`_create` to produce a fresh instance. This
-    mixin decides—based on the configured lifetime—whether to build a new
-    instance or return a cached one from the singleton store / active scope.
-    """
-
     _lifetime: Lifetime
     _token: Any
     _disposer: Optional[Callable[[Any], None]]
 
-    def _create(self, container: IContainer) -> Any:  # pragma: no cover - abstract
+    def _create(self, container: IContainer) -> Any:  
         raise NotImplementedError
 
     def _resolve_with_lifetime(self, container: IContainer) -> Any:
-        # The container exposes its ScopeManager as ``scopes``.
-        scopes = container.scopes  # type: ignore[attr-defined]
+        scopes = container.scopes  
 
         if self._lifetime is Lifetime.TRANSIENT:
             return self._create(container)
@@ -64,8 +34,6 @@ class _LifetimeMixin:
             instance = self._create(container)
             scopes.set_singleton(self._token, instance, self._disposer)
             return instance
-
-        # SCOPED
         scope = scopes.require_current_scope(self._token)
         if scope.has(self._token):
             return scope.get(self._token)
@@ -75,12 +43,6 @@ class _LifetimeMixin:
 
 
 class InstanceProvider(IProvider[T]):
-    """Provides a pre-built instance. Effectively an eager singleton.
-
-    Useful for registering configuration objects, the logger factory, or any
-    value that already exists at wiring time.
-    """
-
     def __init__(self, instance: T) -> None:
         if instance is None:
             raise ProviderError(type(None), reason="instance must not be None")
@@ -93,18 +55,11 @@ class InstanceProvider(IProvider[T]):
     def return_type(self) -> Type[T]:
         return type(self._instance)
 
-    def __repr__(self) -> str:  # pragma: no cover - cosmetic
+    def __repr__(self) -> str:  
         return f"<InstanceProvider type={type(self._instance).__name__}>"
 
 
 class FactoryProvider(_LifetimeMixin, IProvider[T]):
-    """Produces instances by invoking a factory callable.
-
-    The factory may optionally accept the container as its single positional
-    argument (detected via signature inspection), enabling manual resolution
-    of collaborators inside the factory body.
-    """
-
     def __init__(
         self,
         token: Any,
@@ -132,7 +87,7 @@ class FactoryProvider(_LifetimeMixin, IProvider[T]):
                 instance = self._factory(container)
             else:
                 instance = self._factory()
-        except Exception as exc:  # noqa: BLE001 - wrap for uniform routing
+        except Exception as exc: 
             raise DependencyResolutionError(self._token, cause=exc) from exc
         if instance is None:
             raise ProviderError(self._token, reason="factory returned None")
@@ -160,10 +115,10 @@ class FactoryProvider(_LifetimeMixin, IProvider[T]):
         try:
             hints = get_type_hints(factory)
             return hints.get("return", object)
-        except Exception:  # noqa: BLE001 - annotations optional
+        except Exception:  
             return object
 
-    def __repr__(self) -> str:  # pragma: no cover - cosmetic
+    def __repr__(self) -> str:  
         return (
             f"<FactoryProvider token={self._token!r} "
             f"lifetime={self._lifetime.value}>"
@@ -171,14 +126,6 @@ class FactoryProvider(_LifetimeMixin, IProvider[T]):
 
 
 class ClassProvider(_LifetimeMixin, IProvider[T]):
-    """Instantiates a concrete class, auto-wiring constructor dependencies.
-
-    Constructor parameters annotated with a registered token are resolved
-    recursively from the container. Parameters with defaults are left to
-    their defaults when the annotation is not registered; unresolved,
-    non-defaulted parameters raise :class:`ProviderError` at build time.
-    """
-
     def __init__(
         self,
         token: Any,
@@ -201,7 +148,7 @@ class ClassProvider(_LifetimeMixin, IProvider[T]):
         kwargs = self._build_kwargs(container)
         try:
             return self._cls(**kwargs)
-        except Exception as exc:  # noqa: BLE001 - wrap for uniform routing
+        except Exception as exc:  
             raise DependencyResolutionError(self._token, cause=exc) from exc
 
     def _build_kwargs(self, container: IContainer) -> Dict[str, Any]:
@@ -244,7 +191,7 @@ class ClassProvider(_LifetimeMixin, IProvider[T]):
     def return_type(self) -> Type[T]:
         return self._cls
 
-    def __repr__(self) -> str:  # pragma: no cover - cosmetic
+    def __repr__(self) -> str:  
         return (
             f"<ClassProvider token={self._token!r} "
             f"cls={self._cls.__name__} lifetime={self._lifetime.value}>"
