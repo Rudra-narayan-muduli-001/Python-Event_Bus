@@ -166,30 +166,7 @@ class AuditLogger:
         self._seq = last_seq
         self._last_hmac = last_hmac
     def _compute_hmac(self, entry: AuditEntry) -> str:
-        payload_dict = {
-            "seq": entry.seq,
-            "timestamp": entry.timestamp,
-            "level": entry.level,
-            "logger": entry.logger,
-            "event": entry.event,
-            "user": entry.user,
-            "action": entry.action,
-            "result": entry.result,
-            "risk_level": entry.risk_level,
-            "details": entry.details,
-            "prev_hmac": entry.prev_hmac,
-        }
-        payload = json.dumps(
-            payload_dict,
-            sort_keys=True,
-            default=str,
-            ensure_ascii=False,
-        )
-        return hmac.new(
-            self._hmac_key,
-            payload.encode("utf-8"),
-            hashlib.sha256,
-        ).hexdigest()
+        return self._compute_hmac_static(entry, self._hmac_key)
 
     def log(
         self,
