@@ -31,16 +31,17 @@ class EventRegistry:
             self._load_catalog()
 
     def _load_catalog(self) -> None:
-        for category, enum_cls in EVENT_ENUM_BY_CATEGORY.items():
-            for member in enum_cls:
-                descriptor = EventDescriptor(
-                    name=member.value,
-                    category=category,
-                    default_priority=default_priority(member.value),
-                    member=member,
-                    dynamic=False,
-                )
-                self._descriptors[member.value] = descriptor
+        with self._lock:
+            for category, enum_cls in EVENT_ENUM_BY_CATEGORY.items():
+                for member in enum_cls:
+                    descriptor = EventDescriptor(
+                        name=member.value,
+                        category=category,
+                        default_priority=default_priority(member.value),
+                        member=member,
+                        dynamic=False,
+                    )
+                    self._descriptors[member.value] = descriptor
 
     def register(
         self,
