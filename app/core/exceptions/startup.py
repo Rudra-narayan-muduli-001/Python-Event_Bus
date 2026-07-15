@@ -113,7 +113,6 @@ class ShutdownError(StartupError):
     default_severity = ErrorSeverity.WARNING
 
     def __init__(self, component: str, cause: Optional[BaseException] = None, **kwargs: Any) -> None:
-        kwargs.setdefault("severity", ErrorSeverity.WARNING)
         kwargs["recoverable"] = True
         super().__init__(
             f"Component '{component}' failed to shut down cleanly",
