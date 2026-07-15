@@ -89,11 +89,13 @@ class FirewallBlockedError(SecurityError):
         self.with_context(reason_category=reason_category)
 
 
-class PromptInjectionError(FirewallBlockedError):
+class PromptInjectionError(SecurityError):
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(reason_category="prompt_injection", **kwargs)
-        self.code = "SEC_PROMPT_INJECTION"
-        self.message = "Prompt injection attempt detected and blocked"
+        super().__init__(
+            "Prompt injection attempt detected and blocked",
+            code="SEC_PROMPT_INJECTION",
+            **kwargs,
+        )
 
 
 class SandboxViolationError(SecurityError):
