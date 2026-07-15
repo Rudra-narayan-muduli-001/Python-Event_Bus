@@ -458,6 +458,7 @@ class AuditLogger:
             payload.encode("utf-8"),
             hashlib.sha256,
         ).hexdigest()
+
     @property
     def name(self) -> str:
         return self._name
@@ -479,12 +480,15 @@ class AuditLogger:
     @property
     def is_closed(self) -> bool:
         return self._closed
+
     def flush(self) -> None:
         for handler in self._logger.handlers:
             try:
                 handler.flush()
             except Exception:
-                pass
+                logging.getLogger(__name__).exception(
+                    "Failed to flush audit handler %s", handler
+                )
 
     def close(self) -> None:
         if self._closed:
@@ -495,7 +499,9 @@ class AuditLogger:
                 handler.flush()
                 handler.close()
             except Exception:
-                pass
+                logging.getLogger(__name__).exception(
+                    "Failed to close audit handler %s", handler
+                )
             self._logger.removeHandler(handler)
 
     def __repr__(self) -> str:

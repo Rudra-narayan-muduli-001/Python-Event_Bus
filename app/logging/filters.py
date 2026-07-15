@@ -39,7 +39,11 @@ class ModuleFilter(logging.Filter):
 
 @dataclass
 class _RateBucket:
-    timestamps: deque = field(default_factory=lambda: deque(maxlen=1000))
+    maxlen: int = 1000
+    timestamps: deque = field(init=False)
+
+    def __post_init__(self):
+        self.timestamps = deque(maxlen=self.maxlen)
 
 
 class RateLimitFilter(logging.Filter):
@@ -71,7 +75,9 @@ class RateLimitFilter(logging.Filter):
             if suppress_until is not None and now >= suppress_until:
                 del self._suppressed_until[key]
 
-            bucket = self._buckets.setdefault(key, _RateBucket())
+            bucket = self._buckets.setdefault(
+                key, _RateBucket(maxlen=self.max_per_window)
+            )
             cutoff = now - self.window_seconds
             while bucket.timestamps and bucket.timestamps[0] < cutoff:
                 bucket.timestamps.popleft()
