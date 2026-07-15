@@ -5,8 +5,9 @@ from copy import deepcopy
 from typing import Any, Final
 
 from app.core.configs.environment import AppEnvironment, get_environment
+from app.core.utils.dict_utils import deep_merge
 
-__all__ = ["DEFAULT_CONFIG", "get_default_config", "default_for"]
+__all__ = ["get_default_config", "default_for"]
 
 
 _BASE_DEFAULTS: Final[dict[str, Any]] = {
@@ -139,29 +140,12 @@ _ENV_OVERLAYS: Final[dict[AppEnvironment, dict[str, Any]]] = {
 }
 
 
-def _deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
-   
-    result = deepcopy(base)
-    for key, overlay_value in overlay.items():
-        base_value = result.get(key)
-        if isinstance(base_value, dict) and isinstance(overlay_value, dict):
-            result[key] = _deep_merge(base_value, overlay_value)
-        else:
-            result[key] = deepcopy(overlay_value)
-    return result
-
-
 def get_default_config(environment: AppEnvironment | None = None) -> dict[str, Any]:
-    
     env = environment or get_environment()
-    merged = _deep_merge(_BASE_DEFAULTS, _ENV_OVERLAYS.get(env, {}))
+    merged = deep_merge(_BASE_DEFAULTS, _ENV_OVERLAYS.get(env, {}))
     merged.setdefault("app", {})["environment"] = env.value
     return merged
 
 
 def default_for(section: str, environment: AppEnvironment | None = None) -> dict[str, Any]:
-    
     return deepcopy(get_default_config(environment).get(section, {}))
-
-
-DEFAULT_CONFIG: Final[dict[str, Any]] = get_default_config()

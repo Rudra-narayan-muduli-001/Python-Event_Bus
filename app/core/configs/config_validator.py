@@ -27,9 +27,6 @@ _VALID_LOG_LEVELS: Final[frozenset[str]] = frozenset(
     {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
 )
 _VALID_LANGUAGE_MODES: Final[frozenset[str]] = frozenset({"smart", "fixed", "follow"})
-_KNOWN_LANGUAGES: Final[frozenset[str]] = frozenset(
-    {"en", "hi", "hinglish", "or"}  
-)
 
 try:
     from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
@@ -206,4 +203,36 @@ except ImportError:
 
         if errors:
             raise ConfigValidationError(errors)
+        app = config.get("app", {})
+        if isinstance(app, dict):
+            if app.get("debug") is not None:
+                app["debug"] = bool(app["debug"])
+            if app.get("high_load_mode") is not None:
+                app["high_load_mode"] = bool(app["high_load_mode"])
+            if app.get("shutdown_grace_seconds") is not None:
+                app["shutdown_grace_seconds"] = int(app["shutdown_grace_seconds"])
+            if app.get("startup_timeout_seconds") is not None:
+                app["startup_timeout_seconds"] = int(app["startup_timeout_seconds"])
+        logging_cfg = config.get("logging", {})
+        if isinstance(logging_cfg, dict):
+            if logging_cfg.get("console") is not None:
+                logging_cfg["console"] = bool(logging_cfg["console"])
+            if logging_cfg.get("file") is not None:
+                logging_cfg["file"] = bool(logging_cfg["file"])
+            if logging_cfg.get("json_format") is not None:
+                logging_cfg["json_format"] = bool(logging_cfg["json_format"])
+            if logging_cfg.get("rotation_mb") is not None:
+                logging_cfg["rotation_mb"] = int(logging_cfg["rotation_mb"])
+            if logging_cfg.get("retention_days") is not None:
+                logging_cfg["retention_days"] = int(logging_cfg["retention_days"])
+        perms = config.get("permissions", {})
+        if isinstance(perms, dict):
+            if perms.get("require_auth") is not None:
+                perms["require_auth"] = bool(perms["require_auth"])
+            if perms.get("continuous_verification") is not None:
+                perms["continuous_verification"] = bool(perms["continuous_verification"])
+        registry = config.get("model_registry", {})
+        if isinstance(registry, dict):
+            if registry.get("prefer_local") is not None:
+                registry["prefer_local"] = bool(registry["prefer_local"])
         return config

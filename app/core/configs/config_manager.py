@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 import threading
 from copy import deepcopy
 from typing import Any, Callable, Optional
+
+_logger = logging.getLogger(__name__)
 
 from app.core.configs.config_loader import ConfigLoadError, load_merged_config
 from app.core.configs.config_validator import ConfigValidationError, validate_config
@@ -48,8 +51,7 @@ class ConfigManager:
         return cls._instance
 
     @classmethod
-    def reset_instance(cls) -> None:
-        """Drop the singleton (test-only hook)."""
+    def _reset_for_testing(cls) -> None:
         with cls._singleton_lock:
             cls._instance = None
 
@@ -173,7 +175,8 @@ class ConfigManager:
     @property
     def paths(self) -> ProjectPaths:
         self._ensure_loaded()
-        assert self._paths is not None  
+        if self._paths is None:
+            raise ConfigError("Paths not initialized; call bootstrap() first")
         return self._paths
 
     def subscribe(self, listener: ChangeListener) -> Callable[[], None]:
@@ -193,8 +196,8 @@ class ConfigManager:
         for listener in listeners:
             try:
                 listener(deepcopy(old), deepcopy(new))
-            except Exception:  
-                continue
+            except Exception:
+                _logger.exception("Config change listener failed")
 
 
 def get_config_manager() -> ConfigManager:

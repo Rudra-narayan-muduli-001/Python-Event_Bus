@@ -14,39 +14,71 @@ __all__ = ["ProjectPaths", "get_paths", "resolve_project_root"]
 _ROOT_MARKERS: Final[tuple[str, ...]] = ("pyproject.toml", "main.py", "launcher.py")
 
 
-_THIS_FILE_ROOT_DEPTH: Final[int] = 4
-
-
 def resolve_project_root(explicit: Optional[Path] = None) -> Path:
-    
     if explicit is not None:
         return Path(explicit).expanduser().resolve()
 
-    
     env_root = get_path("AIOS_ROOT")
     if env_root is not None:
         return env_root.resolve()
 
-    
     here = Path(__file__).resolve()
     for candidate in (here, *here.parents):
         if candidate.is_dir() and any((candidate / marker).exists() for marker in _ROOT_MARKERS):
             return candidate
 
-    
-    try:
-        return here.parents[_THIS_FILE_ROOT_DEPTH - 1]
-    except IndexError:  
-        return here.parent
+    raise RuntimeError(
+        f"Could not determine project root. Set AIOS_ROOT environment variable "
+        f"or ensure a marker file {_ROOT_MARKERS} exists in a parent directory."
+    )
+
+
+_PATH_SPEC: Final[list[tuple[str, str]]] = [
+    ("app_dir", "app"),
+    ("data_dir", "data"),
+    ("resources_dir", "resources"),
+    ("scripts_dir", "scripts"),
+    ("docs_dir", "docs"),
+    ("tests_dir", "tests"),
+    ("logs_dir", "logs"),
+    ("core_configs_dir", "app/core/configs"),
+    ("data_configs_dir", "data/configs"),
+    ("data_cache_dir", "data/cache"),
+    ("data_runtime_dir", "data/runtime"),
+    ("data_temp_dir", "data/temp"),
+    ("data_backups_dir", "data/backups"),
+    ("data_experience_dir", "data/experience"),
+    ("data_learning_dir", "data/learning"),
+    ("data_benchmark_dir", "data/benchmark"),
+    ("data_memory_dir", "data/memory"),
+    ("data_graphs_dir", "data/graphs"),
+    ("data_experiments_dir", "data/experiments"),
+    ("data_patches_dir", "data/patches"),
+    ("data_rollback_dir", "data/rollback"),
+    ("data_analytics_dir", "data/analytics"),
+    ("data_archive_dir", "data/archive"),
+    ("ai_models_dir", "resources/ai_models"),
+    ("prompts_dir", "resources/prompts"),
+    ("templates_dir", "resources/templates"),
+    ("dictionaries_dir", "resources/dictionaries"),
+    ("schemas_dir", "resources/schemas"),
+    ("logs_system_dir", "logs/system"),
+    ("logs_startup_dir", "logs/startup"),
+    ("logs_events_dir", "logs/events"),
+    ("logs_errors_dir", "logs/errors"),
+    ("logs_audit_dir", "logs/audit"),
+    ("logs_security_dir", "logs/security"),
+    ("logs_plugins_dir", "logs/plugins"),
+    ("logs_agents_dir", "logs/agents"),
+    ("logs_crashes_dir", "logs/crashes"),
+]
 
 
 @dataclass(frozen=True)
 class ProjectPaths:
-  
 
     root: Path
 
-    
     app_dir: Path = field(init=False)
     data_dir: Path = field(init=False)
     resources_dir: Path = field(init=False)
@@ -92,53 +124,14 @@ class ProjectPaths:
     logs_crashes_dir: Path = field(init=False)
 
     def __post_init__(self) -> None:
-       
         root = self.root
 
         def _set(name: str, path: Path) -> None:
             object.__setattr__(self, name, path)
 
-        # Top-level
-        _set("app_dir", root / "app")
-        _set("data_dir", root / "data")
-        _set("resources_dir", root / "resources")
-        _set("scripts_dir", root / "scripts")
-        _set("docs_dir", root / "docs")
-        _set("tests_dir", root / "tests")
-        _set("logs_dir", root / "logs")
-        _set("core_configs_dir", root / "app" / "core" / "configs")
-        data = root / "data"
-        _set("data_configs_dir", data / "configs")
-        _set("data_cache_dir", data / "cache")
-        _set("data_runtime_dir", data / "runtime")
-        _set("data_temp_dir", data / "temp")
-        _set("data_backups_dir", data / "backups")
-        _set("data_experience_dir", data / "experience")
-        _set("data_learning_dir", data / "learning")
-        _set("data_benchmark_dir", data / "benchmark")
-        _set("data_memory_dir", data / "memory")
-        _set("data_graphs_dir", data / "graphs")
-        _set("data_experiments_dir", data / "experiments")
-        _set("data_patches_dir", data / "patches")
-        _set("data_rollback_dir", data / "rollback")
-        _set("data_analytics_dir", data / "analytics")
-        _set("data_archive_dir", data / "archive")
-        resources = root / "resources"
-        _set("ai_models_dir", resources / "ai_models")
-        _set("prompts_dir", resources / "prompts")
-        _set("templates_dir", resources / "templates")
-        _set("dictionaries_dir", resources / "dictionaries")
-        _set("schemas_dir", resources / "schemas")
-        logs = root / "logs"
-        _set("logs_system_dir", logs / "system")
-        _set("logs_startup_dir", logs / "startup")
-        _set("logs_events_dir", logs / "events")
-        _set("logs_errors_dir", logs / "errors")
-        _set("logs_audit_dir", logs / "audit")
-        _set("logs_security_dir", logs / "security")
-        _set("logs_plugins_dir", logs / "plugins")
-        _set("logs_agents_dir", logs / "agents")
-        _set("logs_crashes_dir", logs / "crashes")
+        for attr, rel in _PATH_SPEC:
+            segments = rel.split("/")
+            _set(attr, root.joinpath(*segments))
 
     def core_config_file(self, filename: str) -> Path:
         return self.core_configs_dir / filename

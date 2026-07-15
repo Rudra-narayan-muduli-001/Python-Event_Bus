@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import os
 import re
-from copy import deepcopy
 from pathlib import Path
-from typing import Any, Final, Mapping, Optional
+from typing import Any, Final, Optional
 
 from app.core.configs.defaults import get_default_config
 from app.core.configs.environment import (
@@ -13,6 +12,7 @@ from app.core.configs.environment import (
     get_environment,
 )
 from app.core.configs.paths import ProjectPaths, get_paths
+from app.core.utils.dict_utils import deep_merge
 
 __all__ = [
     "ConfigLoadError",
@@ -36,17 +36,7 @@ _DOMAIN_FILES: Final[dict[str, str]] = {
 _INTERP_PATTERN: Final[re.Pattern[str]] = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?::([^}]*))?\}")
 
 class ConfigLoadError(RuntimeError):
-    """Raised only for unrecoverable load failures (e.g. malformed override)."""
-
-def _deep_merge(base: dict[str, Any], overlay: Mapping[str, Any]) -> dict[str, Any]:
-    result = deepcopy(base)
-    for key, overlay_value in overlay.items():
-        base_value = result.get(key)
-        if isinstance(base_value, dict) and isinstance(overlay_value, Mapping):
-            result[key] = _deep_merge(base_value, dict(overlay_value))
-        else:
-            result[key] = deepcopy(overlay_value)
-    return result
+    pass
 
 
 def _interpolate_value(value: Any) -> Any:
@@ -64,25 +54,20 @@ def _interpolate_value(value: Any) -> Any:
 
 
 def _coerce_scalar(raw: str) -> Any:
-    lowered = raw.strip().lower()
+    stripped = raw.strip()
+    lowered = stripped.lower()
     if lowered in {"true", "false"}:
         return lowered == "true"
     if lowered in {"null", "none", ""}:
         return None
     try:
-        if raw.strip().isdigit() or (raw.strip().startswith("-") and raw.strip()[1:].isdigit()):
-            return int(raw.strip())
-        return float(raw.strip()) if _looks_like_float(raw) else raw
+        return int(stripped)
     except ValueError:
-        return raw
-
-
-def _looks_like_float(raw: str) -> bool:
+        pass
     try:
-        float(raw.strip())
-        return "." in raw or "e" in raw.lower()
+        return float(stripped)
     except ValueError:
-        return False
+        return stripped
 
 def load_yaml_file(path: Path, *, required: bool = False) -> dict[str, Any]:
 
@@ -92,9 +77,10 @@ def load_yaml_file(path: Path, *, required: bool = False) -> dict[str, Any]:
         return {}
 
     try:
-        import yaml  
-    except ImportError as exc:  
+        import yaml
+    except ImportError as exc:
         raise ConfigLoadError(
+            "PyYAML is required to load YAML config files. Install it with: pip install pyyaml"
         ) from exc
 
     try:
@@ -146,7 +132,7 @@ def load_merged_config(
         resolved_paths.core_config_file("app_config.yaml"), required=is_strict
     )
     if app_config:
-        config = _deep_merge(config, app_config)
+        config = deep_merge(config, app_config)
 
     for filename, section in _DOMAIN_FILES.items():
         file_data = load_yaml_file(
@@ -155,14 +141,14 @@ def load_merged_config(
         if not file_data:
             continue
         body = file_data.get(section, file_data)
-        config[section] = _deep_merge(config.get(section, {}), body)
+        config[section] = deep_merge(config.get(section, {}), body)
     env_doc = load_yaml_file(
         resolved_paths.core_config_file("environment.yaml"), required=is_strict
     )
     if env_doc:
         overlay = env_doc.get("environments", {}).get(env.value, {}) or env_doc.get(env.value, {})
         if overlay:
-            config = _deep_merge(config, overlay)
+            config = deep_merge(config, overlay)
     config = _interpolate_value(config)
     config = _apply_env_overrides(config)
     config.setdefault("app", {})["environment"] = env.value

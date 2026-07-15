@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from enum import Enum
+from functools import cache
 from pathlib import Path
 from typing import Callable, Final, Optional, Sequence, TypeVar
 
@@ -67,8 +68,8 @@ class AppEnvironment(str, Enum):
 def load_dotenv_if_present(dotenv_path: Optional[Path] = None) -> bool:
   
     try:
-        from dotenv import load_dotenv  # type: ignore
-    except Exception:
+        from dotenv import load_dotenv
+    except ImportError:
         return False
 
     target = dotenv_path
@@ -76,14 +77,14 @@ def load_dotenv_if_present(dotenv_path: Optional[Path] = None) -> bool:
         candidate = Path.cwd() / ".env"
         target = candidate if candidate.exists() else None
 
-    if target is None or not Path(target).exists():
+    if target is None or not target.exists():
         return False
 
     return bool(load_dotenv(dotenv_path=str(target), override=False))
 
 
+@cache
 def get_environment() -> AppEnvironment:
-    
     return AppEnvironment.from_string(os.environ.get(ENV_VAR_NAME))
 
 
