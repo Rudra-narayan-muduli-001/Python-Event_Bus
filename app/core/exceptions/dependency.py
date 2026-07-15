@@ -26,6 +26,7 @@ class DependencyNotFoundError(DependencyError):
         )
         self.with_context(token=repr(token))
 
+
 class DependencyResolutionError(DependencyError):
     def __init__(self, token: Any, cause: Optional[BaseException] = None, **kwargs: Any) -> None:
         super().__init__(
@@ -35,6 +36,7 @@ class DependencyResolutionError(DependencyError):
             **kwargs,
         )
         self.with_context(token=repr(token))
+
 
 class CircularDependencyError(DependencyError):
 
@@ -48,6 +50,7 @@ class CircularDependencyError(DependencyError):
             **kwargs,
         )
         self.with_context(chain=chain_list)
+
 
 class DuplicateRegistrationError(DependencyError):
     def __init__(self, token: Any, **kwargs: Any) -> None:

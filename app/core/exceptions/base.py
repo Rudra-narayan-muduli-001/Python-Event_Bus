@@ -19,6 +19,7 @@ class ErrorSeverity(str, enum.Enum):
     CRITICAL = "critical"     
     FATAL = "fatal"          
 
+
 class ErrorCategory(str, enum.Enum):
 
     CONFIGURATION = "configuration"
