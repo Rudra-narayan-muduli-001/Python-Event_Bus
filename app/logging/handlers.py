@@ -25,11 +25,15 @@ class ConsoleHandler(logging.StreamHandler):
                 self.addFilter(f)
 
     def emit(self, record: logging.LogRecord) -> None:
-        if record.levelno >= logging.WARNING:
-            self.stream = self._stderr
-        else:
-            self.stream = sys.stdout
-        super().emit(record)
+        stream = self._stderr if record.levelno >= logging.WARNING else sys.stdout
+        try:
+            msg = self.format(record)
+            stream.write(msg + self.terminator)
+            self.flush()
+        except RecursionError:
+            raise
+        except Exception:
+            self.handleError(record)
 
 
 class FileLogHandler(logging.FileHandler):
