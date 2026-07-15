@@ -144,21 +144,30 @@ class DeduplicationMiddleware(Middleware):
 
 
 class RateLimitMiddleware(Middleware):
-    def __init__(self, max_per_second: float = 100.0) -> None:
+    def __init__(self, max_per_second: float = 100.0, max_tracked: int = 10000) -> None:
         self._max = max_per_second
-        self._counts: Dict[str, tuple[int, float]] = {}  
+        self._max_tracked = max_tracked
+        self._counts: Dict[str, tuple[int, float]] = {}
         self._lock = threading.Lock()
+
+    def _evict(self, now: float) -> None:
+        cutoff = now - 1.0
+        stale = [k for k, (_, start) in self._counts.items() if start < cutoff]
+        for k in stale:
+            del self._counts[k]
 
     def process(self, event: Event, next_call: NextCall) -> Optional[Event]:
         if event.is_emergency:
             return next_call(event)
         now = time.time()
         with self._lock:
+            if len(self._counts) > self._max_tracked:
+                self._evict(now)
             count, start = self._counts.get(event.name, (0, now))
             if now - start >= 1.0:
-                count, start = 0, now  
+                count, start = 0, now
             if count >= self._max:
-                return None  
+                return None
             self._counts[event.name] = (count + 1, start)
         return next_call(event)
 
