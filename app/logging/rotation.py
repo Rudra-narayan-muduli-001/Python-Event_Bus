@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 
 
 class RotationType(Enum):
@@ -37,28 +37,27 @@ class _CompressingRotatingFileHandler(RotatingFileHandler):
     compress: bool = True
 
     def rotate(self, source: str, dest: str) -> None:
-        if self.compress and dest and not dest.endswith(".gz"):
-            dest_gz = dest + ".gz"
-            with open(source, "rb") as f_in:
-                with gzip.open(dest_gz, "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-            os.remove(source)
-        else:
-            super().rotate(source, dest)
+        _rotate_with_compression(source, dest, self.compress, super().rotate)
 
 
 class _CompressingTimedRotatingFileHandler(TimedRotatingFileHandler):
     compress: bool = True
 
     def rotate(self, source: str, dest: str) -> None:
-        if self.compress and dest and not dest.endswith(".gz"):
-            dest_gz = dest + ".gz"
-            with open(source, "rb") as f_in:
-                with gzip.open(dest_gz, "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-            os.remove(source)
-        else:
-            super().rotate(source, dest)
+        _rotate_with_compression(source, dest, self.compress, super().rotate)
+
+
+def _rotate_with_compression(
+    source: str, dest: str, compress: bool, fallback_rotate: Callable[[str, str], None]
+) -> None:
+    if compress and dest and not dest.endswith(".gz"):
+        dest_gz = dest + ".gz"
+        with open(source, "rb") as f_in:
+            with gzip.open(dest_gz, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        os.remove(source)
+    else:
+        fallback_rotate(source, dest)
 
 
 def create_rotating_handler(
