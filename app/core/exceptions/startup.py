@@ -91,12 +91,19 @@ class PhaseInitializationError(StartupError):
 
 
 class StartupTimeoutError(StartupError):
-    def __init__(self, component: str, timeout_seconds: Optional[float] = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        component: str,
+        timeout_seconds: Optional[float] = None,
+        *,
+        cause: Optional[BaseException] = None,
+        **kwargs: Any,
+    ) -> None:
         detail = f" after {timeout_seconds}s" if timeout_seconds is not None else ""
         super().__init__(
             f"Startup of '{component}' timed out{detail}",
             code="STARTUP_TIMEOUT",
-            cause=kwargs.pop("cause", None),
+            cause=cause,
             **kwargs,
         )
         self.with_context(component=component, timeout_seconds=timeout_seconds)
