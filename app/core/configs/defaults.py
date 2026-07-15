@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from copy import deepcopy
@@ -116,7 +115,6 @@ _BASE_DEFAULTS: Final[dict[str, Any]] = {
         
     },
 }
-
 
 
 _ENV_OVERLAYS: Final[dict[AppEnvironment, dict[str, Any]]] = {

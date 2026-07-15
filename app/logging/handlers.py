@@ -2,7 +2,7 @@ import logging
 import sys
 from pathlib import Path
 from typing import List, Optional
-from app.logging.formatters import BaseFormatter, ConsoleFormatter, DetailedFileFormatter
+from app.logging.formatters import ConsoleFormatter, DetailedFileFormatter
 from app.logging.rotation import RotationConfig, create_rotating_handler
 
 class ConsoleHandler(logging.StreamHandler):
