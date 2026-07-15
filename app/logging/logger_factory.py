@@ -29,10 +29,12 @@ class LoggerFactory:
     def __init__(self) -> None:
         self._loggers: dict[str, Logger] = {}
         self._audit_loggers: dict[str, AuditLogger] = {}
+
     def get(self, name: str) -> Logger | None:
         return self._loggers.get(name)
     def get_audit(self, name: str) -> AuditLogger | None:
         return self._audit_loggers.get(name)
+
     def register(self, name: str, logger: Logger) -> None:
         self._loggers[name] = logger
     def is_registered(self, name: str) -> bool:
@@ -49,6 +51,7 @@ class LoggerFactory:
     @property
     def registered_names(self) -> list[str]:
         return list(self._loggers.keys())
+
     def create_console_logger(
         self,
         name: str,
@@ -268,6 +271,7 @@ class LoggerFactory:
         logger = Logger(config)
         self._loggers[name] = logger
         return logger
+
     def shutdown(self) -> None:
         for name in list(self._loggers.keys()):
             self.unregister(name)
