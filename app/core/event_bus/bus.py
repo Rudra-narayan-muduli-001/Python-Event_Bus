@@ -20,7 +20,7 @@ from app.core.event_bus.subscriber import ErrorPolicy, EventHandler, Subscriber
 from app.logging.logger_factory import LoggerFactory
 from app.logging.logger import Logger, LogLevel
 from app.core.exceptions.event import EventDispatchError, EventPublishError, UnknownEventTypeError
-from app.dependency_injection.container import Container
+from app.core.dependency_injection.container import Container
 
 __all__ = ["EventBus", "register_event_bus"]
 

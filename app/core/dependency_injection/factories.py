@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Type, TypeVar
 from app.core.constants.app import APP_SLUG
 from app.core.exceptions import ProviderError
-from app.dependency_injection.container import Container
-from app.dependency_injection.scopes import Lifetime
+from app.core.dependency_injection.container import Container
+from app.core.dependency_injection.scopes import Lifetime
 from app.logging import Logger, LoggerFactory, LogLevel
 
 __all__ = [

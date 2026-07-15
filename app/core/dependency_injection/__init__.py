@@ -1,22 +1,22 @@
 from __future__ import annotations
-from app.dependency_injection.interfaces import (
+from app.core.dependency_injection.interfaces import (
     IContainer,
     ILifecycle,
     IProvider,
 )
 
-from app.dependency_injection.scopes import (
+from app.core.dependency_injection.scopes import (
     Lifetime,
     Scope,
     ScopeManager,
 )
-from app.dependency_injection.providers import (
+from app.core.dependency_injection.providers import (
     ClassProvider,
     FactoryProvider,
     InstanceProvider,
 )
-from app.dependency_injection.container import Container
-from app.dependency_injection.factories import (
+from app.core.dependency_injection.container import Container
+from app.core.dependency_injection.factories import (
     ContainerBuilder,
     ServiceFactory,
     build_root_container,

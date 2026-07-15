@@ -2,8 +2,8 @@ from __future__ import annotations
 import inspect
 from typing import Any, Callable, Dict, Optional, Type, TypeVar, get_type_hints
 from app.core.exceptions import ProviderError, DependencyResolutionError
-from app.dependency_injection.interfaces import IContainer, IProvider
-from app.dependency_injection.scopes import Lifetime
+from app.core.dependency_injection.interfaces import IContainer, IProvider
+from app.core.dependency_injection.scopes import Lifetime
 
 __all__ = [
     "InstanceProvider",

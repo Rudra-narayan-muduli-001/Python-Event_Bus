@@ -7,13 +7,13 @@ from app.core.exceptions import (
     DependencyNotFoundError,
     DuplicateRegistrationError,
 )
-from app.dependency_injection.interfaces import IContainer, IProvider
-from app.dependency_injection.providers import (
+from app.core.dependency_injection.interfaces import IContainer, IProvider
+from app.core.dependency_injection.providers import (
     ClassProvider,
     FactoryProvider,
     InstanceProvider,
 )
-from app.dependency_injection.scopes import Lifetime, Scope, ScopeManager
+from app.core.dependency_injection.scopes import Lifetime, Scope, ScopeManager
 from app.logging import Logger
 
 __all__ = ["Container"]
