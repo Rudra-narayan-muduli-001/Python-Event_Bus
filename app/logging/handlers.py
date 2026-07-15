@@ -141,7 +141,9 @@ class CompositeHandler(logging.Handler):
             try:
                 h.close()
             except Exception:
-                pass
+                logging.getLogger(__name__).exception(
+                    "Failed to close handler %s", h
+                )
         super().close()
 
     def flush(self) -> None:
@@ -149,4 +151,6 @@ class CompositeHandler(logging.Handler):
             try:
                 h.flush()
             except Exception:
-                pass
+                logging.getLogger(__name__).exception(
+                    "Failed to flush handler %s", h
+                )
