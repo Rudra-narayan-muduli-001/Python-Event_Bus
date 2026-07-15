@@ -75,13 +75,14 @@ class Dispatcher:
             return self._finalize(processed)
 
         mode = processed.delivery_mode
+        if mode is EventDeliveryMode.QUEUED:
+            for sub in targets:
+                self._executor.submit(self._safe_invoke, sub, processed)
+            return self._finalize(processed)
+
         try:
-            if mode is EventDeliveryMode.QUEUED:
-                for sub in targets:
-                    self._executor.submit(self._safe_invoke, sub, processed)
-            else:
-                for sub in targets:
-                    self._safe_invoke(sub, processed)
+            for sub in targets:
+                self._safe_invoke(sub, processed)
             processed.mark(EventStatus.HANDLED)
         except Exception as exc: 
             processed.mark(EventStatus.FAILED)
