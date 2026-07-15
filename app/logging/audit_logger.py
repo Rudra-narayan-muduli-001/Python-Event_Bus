@@ -139,6 +139,7 @@ class AuditLogger:
             formatter=AuditFormatter(),
         )
         self._logger.addHandler(handler)
+
     def _init_chain_from_existing(self) -> None:
         path = Path(self._file_path)
         if not path.exists() or path.stat().st_size == 0:
@@ -165,6 +166,7 @@ class AuditLogger:
 
         self._seq = last_seq
         self._last_hmac = last_hmac
+
     def _compute_hmac(self, entry: AuditEntry) -> str:
         return self._compute_hmac_static(entry, self._hmac_key)
 
