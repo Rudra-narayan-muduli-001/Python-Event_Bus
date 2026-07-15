@@ -99,7 +99,7 @@ class ScopedPublisher(Publisher):
     def source(self) -> str:
         return self._source
 
-    def emit(self, name: str, payload: Optional[Dict[str, Any]] = None, **kwargs: Any): 
+    def emit(self, name: str, payload: Optional[Dict[str, Any]] = None, **kwargs: Any) -> Optional[Event]:
         kwargs.pop("source", None)
         return super().emit(name, payload, source=self._source, **kwargs)
 
