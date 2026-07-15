@@ -13,7 +13,13 @@ class LogLevel(IntEnum):
 
     @classmethod
     def from_string(cls, name: str) -> "LogLevel":
-        return cls[name.upper()]
+        try:
+            return cls[name.upper()]
+        except KeyError:
+            valid = ", ".join(m.name for m in cls)
+            raise ValueError(
+                f"Unknown log level '{name}'. Valid levels: {valid}"
+            ) from None
 
 
 @dataclass
