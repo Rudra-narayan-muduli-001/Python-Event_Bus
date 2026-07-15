@@ -90,6 +90,7 @@ class EventSerializer:
                 cause=exc,
             ) from exc
         return cls.from_dict(data)
+
     @staticmethod
     def _context_from_dict(raw: Optional[Dict[str, Any]]) -> Optional[EventContext]:
         if raw is None:

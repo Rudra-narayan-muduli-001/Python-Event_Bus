@@ -29,6 +29,7 @@ class EventRegistry:
         self._lock = threading.RLock()
         if load_catalog:
             self._load_catalog()
+
     def _load_catalog(self) -> None:
         for category, enum_cls in EVENT_ENUM_BY_CATEGORY.items():
             for member in enum_cls:
@@ -40,6 +41,7 @@ class EventRegistry:
                     dynamic=False,
                 )
                 self._descriptors[member.value] = descriptor
+
     def register(
         self,
         name: str,
@@ -86,6 +88,7 @@ class EventRegistry:
                     f"Cannot unregister first-party event name {name!r}"
                 )
             self._descriptors.pop(name, None)
+
     def is_known(self, name: str) -> bool:
         with self._lock:
             return name in self._descriptors

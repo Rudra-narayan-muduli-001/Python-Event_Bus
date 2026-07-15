@@ -44,6 +44,7 @@ class Event:
             self.context = EventContext(source=self.source)
         elif self.source is None:
             self.source = self.context.source
+
     @property
     def correlation_id(self) -> str:
         assert self.context is not None  
@@ -92,7 +93,7 @@ class Event:
     def __str__(self) -> str:
         return f"[{self.name}] id={self.event_id[:8]} status={self.status.value}"
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:
         return (
             f"Event(name={self.name!r}, id={self.event_id!r}, "
             f"category={self.category.value!r}, priority={self.priority!r}, "

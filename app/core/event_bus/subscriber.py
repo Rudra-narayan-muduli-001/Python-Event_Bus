@@ -68,6 +68,7 @@ class Subscriber:
 
         self._weak = weak
         self._handler_ref = self._make_ref(handler, weak)
+
     @property
     def is_async(self) -> bool:
         return self._is_async
@@ -83,10 +84,12 @@ class Subscriber:
     @property
     def call_count(self) -> int:
         return self._call_count
+
     def wants(self, event: Event) -> bool:
         if self._state is not SubscriptionState.ACTIVE:
             return False
         return self.filter.accepts(event)
+
     def invoke(self, event: Event) -> Any:
         handler = self._resolve_handler()
         if handler is None:
@@ -120,6 +123,7 @@ class Subscriber:
             return result
         except Exception as exc:  
             return self._handle_error(event, exc)
+
     def pause(self) -> None:
         with self._lock:
             if self._state is SubscriptionState.ACTIVE:

@@ -67,6 +67,7 @@ class EventStore:
     @property
     def persistent(self) -> bool:
         return self._conn is not None
+
     def record(self, event: Event) -> None:
         with self._lock:
             self._buffer.append(event)

@@ -1,5 +1,4 @@
 from __future__ import annotations
-# import asyncio
 import threading
 from typing import Any, Callable, Dict, List, Optional
 from app.core.constants.events import EventCategory, EventDeliveryMode
@@ -58,6 +57,7 @@ class EventBus:
             logger=self._logger,
             logger_factory=self._factory,
         )
+
     def start(self) -> None:
         with self._lock:
             self._running = True
@@ -77,6 +77,7 @@ class EventBus:
     @property
     def store(self) -> EventStore:
         return self._store
+
     def publish(self, event: Event) -> Optional[Event]:
         self._guard_publish(event)
         try:
@@ -128,6 +129,7 @@ class EventBus:
             )
         if self._strict and not self._registry.is_known(event.name):
             raise UnknownEventTypeError(f"Unknown event name: {event.name!r}")
+
     def publisher(self, source: str) -> ScopedPublisher:
         return ScopedPublisher(self._sink, source=source, logger=self._logger)
 
@@ -136,6 +138,7 @@ class EventBus:
 
     def _sink(self, event: Event) -> Optional[Event]:
         return self.publish(event)
+
     def subscribe(
         self,
         handler: EventHandler,

@@ -37,6 +37,7 @@ class Dispatcher:
             max_workers=max_workers, thread_name_prefix="aios-event"
         )
         self._closed = False
+
     def add_subscriber(self, subscriber: Subscriber) -> Subscriber:
         with self._lock:
             self._subscribers.append(subscriber)
@@ -91,6 +92,7 @@ class Dispatcher:
             ) from exc
 
         return self._finalize(processed)
+
     async def dispatch_async(self, event: Event) -> Event:
         if self._closed:
             raise EventDispatchError(
@@ -144,6 +146,7 @@ class Dispatcher:
                     extra={"event": event.name, "error": str(exc)},
                 )
         return event
+
     def close(self, *, wait: bool = True) -> None:
         if self._closed:
             return
