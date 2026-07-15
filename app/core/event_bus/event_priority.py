@@ -53,10 +53,9 @@ class PrioritizedEvent:
     sort_key: Tuple[int, int] = field(init=False)
     event: "Event" = field(compare=False)
 
-    def __init__(self, event: "Event") -> None:
-        self.event = event
-        priority = resolve_priority(event)
-        object.__setattr__(self, "sort_key", (-int(priority), next(_sequence)))
+    def __post_init__(self) -> None:
+        priority = resolve_priority(self.event)
+        self.sort_key = (-int(priority), next(_sequence))
 
     @property
     def priority(self) -> EventPriority:
