@@ -71,81 +71,81 @@ class ModelSpec:
 MODEL_SPECS: Final[Mapping[ModelId, ModelSpec]] = MappingProxyType(
     {
         ModelId.MINILM_L6_V2: ModelSpec(
-            ModelId.MINILM_L6_V2, ModelRole.INTENT, Device.CPU,
+            model_id=ModelId.MINILM_L6_V2, role=ModelRole.INTENT, device=Device.CPU,
             offline=True, approx_ram_mb=120,
             quantizations=(Quantization.NONE,), runtime="sentence-transformers",
         ),
         ModelId.E5_MULTILINGUAL_SMALL: ModelSpec(
-            ModelId.E5_MULTILINGUAL_SMALL, ModelRole.MULTILINGUAL_EMBEDDING, Device.GPU,
+            model_id=ModelId.E5_MULTILINGUAL_SMALL, role=ModelRole.MULTILINGUAL_EMBEDDING, device=Device.GPU,
             offline=True, approx_vram_mb=300,
             quantizations=(Quantization.FP16, Quantization.NONE),
             runtime="sentence-transformers",
         ),
         ModelId.GEMMA_4_E2B: ModelSpec(
-            ModelId.GEMMA_4_E2B, ModelRole.LOCAL_LLM, Device.GPU,
+            model_id=ModelId.GEMMA_4_E2B, role=ModelRole.LOCAL_LLM, device=Device.GPU,
             offline=True, approx_vram_mb=3200, approx_ram_mb=1500,
             quantizations=(Quantization.Q4_K_M, Quantization.Q5_K_M),
             runtime="llama.cpp",
         ),
         ModelId.GROQ: ModelSpec(
-            ModelId.GROQ, ModelRole.CLOUD_LLM, Device.CPU,
+            model_id=ModelId.GROQ, role=ModelRole.CLOUD_LLM, device=Device.CPU,
             offline=False, runtime="Groq API",
         ),
         ModelId.WHISPER_SMALL: ModelSpec(
-            ModelId.WHISPER_SMALL, ModelRole.ASR, Device.GPU,
+            model_id=ModelId.WHISPER_SMALL, role=ModelRole.ASR, device=Device.GPU,
             offline=True, approx_vram_mb=1000,
             quantizations=(Quantization.FP16, Quantization.INT8),
             runtime="openai-whisper",
         ),
         ModelId.META_OMNILINGUAL_CTC: ModelSpec(
-            ModelId.META_OMNILINGUAL_CTC, ModelRole.ASR, Device.GPU,
+            model_id=ModelId.META_OMNILINGUAL_CTC, role=ModelRole.ASR, device=Device.GPU,
             offline=True, approx_vram_mb=1200,
             quantizations=(Quantization.INT8,), runtime="Sherpa-ONNX",
         ),
         ModelId.MARIANMT_INT8: ModelSpec(
-            ModelId.MARIANMT_INT8, ModelRole.TRANSLATION, Device.GPU,
+            model_id=ModelId.MARIANMT_INT8, role=ModelRole.TRANSLATION, device=Device.GPU,
             offline=True, approx_vram_mb=450,
             quantizations=(Quantization.INT8,), runtime="CTranslate2",
         ),
         ModelId.KOKORO_82M: ModelSpec(
-            ModelId.KOKORO_82M, ModelRole.TTS, Device.GPU,
+            model_id=ModelId.KOKORO_82M, role=ModelRole.TTS, device=Device.GPU,
             offline=True, approx_vram_mb=400,
             quantizations=(Quantization.FP16,), runtime="Sherpa-ONNX / Kokoro",
         ),
         ModelId.PIPER: ModelSpec(
-            ModelId.PIPER, ModelRole.TTS, Device.CPU,
+            model_id=ModelId.PIPER, role=ModelRole.TTS, device=Device.CPU,
             offline=True, approx_ram_mb=200, runtime="Piper",
         ),
         ModelId.INDIC_TTS: ModelSpec(
-            ModelId.INDIC_TTS, ModelRole.TTS, Device.GPU,
+            model_id=ModelId.INDIC_TTS, role=ModelRole.TTS, device=Device.GPU,
             offline=True, approx_vram_mb=400, runtime="Indic TTS",
         ),
         ModelId.CAMPPLUSPLUS: ModelSpec(
-            ModelId.CAMPPLUSPLUS, ModelRole.SPEAKER_VERIFICATION, Device.GPU,
+            model_id=ModelId.CAMPPLUSPLUS, role=ModelRole.SPEAKER_VERIFICATION, device=Device.GPU,
             offline=True, approx_vram_mb=200, runtime="Sherpa-ONNX",
         ),
         ModelId.ECAPA_TDNN: ModelSpec(
-            ModelId.ECAPA_TDNN, ModelRole.SPEAKER_VERIFICATION, Device.GPU,
+            model_id=ModelId.ECAPA_TDNN, role=ModelRole.SPEAKER_VERIFICATION, device=Device.GPU,
             offline=True, approx_vram_mb=250, runtime="Sherpa-ONNX",
         ),
         ModelId.SILERO_VAD: ModelSpec(
-            ModelId.SILERO_VAD, ModelRole.VAD, Device.CPU,
+            model_id=ModelId.SILERO_VAD, role=ModelRole.VAD, device=Device.CPU,
             offline=True, approx_ram_mb=60, runtime="Silero",
         ),
         ModelId.OPENWAKEWORD: ModelSpec(
-            ModelId.OPENWAKEWORD, ModelRole.WAKE_WORD, Device.CPU,
+            model_id=ModelId.OPENWAKEWORD, role=ModelRole.WAKE_WORD, device=Device.CPU,
             offline=True, approx_ram_mb=80, runtime="OpenWakeWord",
         ),
         ModelId.YOLOV26_MEDIUM: ModelSpec(
-            ModelId.YOLOV26_MEDIUM, ModelRole.VISION_DETECT, Device.GPU,
+            model_id=ModelId.YOLOV26_MEDIUM, role=ModelRole.VISION_DETECT, device=Device.GPU,
             offline=True, approx_vram_mb=450, runtime="Ultralytics",
         ),
         ModelId.PADDLEOCR: ModelSpec(
-            ModelId.PADDLEOCR, ModelRole.OCR, Device.GPU,
+            model_id=ModelId.PADDLEOCR, role=ModelRole.OCR, device=Device.GPU,
             offline=True, approx_vram_mb=300, runtime="PaddleOCR",
         ),
         ModelId.GOCLICK_FLORENCE2: ModelSpec(
-            ModelId.GOCLICK_FLORENCE2, ModelRole.VISION_LANGUAGE, Device.GPU,
+            model_id=ModelId.GOCLICK_FLORENCE2, role=ModelRole.VISION_LANGUAGE, device=Device.GPU,
             offline=True, approx_vram_mb=500, runtime="Florence-2",
         ),
     }

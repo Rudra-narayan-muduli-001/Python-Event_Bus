@@ -2,6 +2,8 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import Final, Mapping
 
+from app.core.utils.dict_utils import clamp, within
+
 _KB: Final[int] = 1024
 _MB: Final[int] = 1024 * _KB
 _GB: Final[int] = 1024 * _MB
@@ -85,12 +87,7 @@ LIMIT_REGISTRY: Final[Mapping[str, int]] = MappingProxyType(
     }
 )
 
-def clamp(value: int, low: int, high: int) -> int:
-    return max(low, min(value, high))
 
-
-def within(value: int, high: int, low: int = 0) -> bool:
-    return low <= value <= high
 
 
 def clamp_tokens(requested: int) -> int:

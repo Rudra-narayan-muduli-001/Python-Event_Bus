@@ -8,11 +8,13 @@ from app.core.constants.app import APP_SLUG, FeatureGroup
 _ENV_ROOT_VAR: Final[str] = "AIOS_ROOT"
 
 def _resolve_project_root() -> Path:
-    
     env_root = os.environ.get(_ENV_ROOT_VAR, "").strip()
     if env_root:
         return Path(env_root).expanduser().resolve()
-    return Path(__file__).resolve().parents[3]
+    raise RuntimeError(
+        f"{_ENV_ROOT_VAR} environment variable is not set. "
+        f"Set it to the absolute path of the project root."
+    )
 
 
 PROJECT_ROOT: Final[Path] = _resolve_project_root()

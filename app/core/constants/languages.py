@@ -76,6 +76,9 @@ LANGUAGE_CAPABILITIES: Final[Mapping[LanguageCode, LanguageCapabilities]] = Mapp
     }
 )
 
+_SUPPORTED_LANGUAGE_VALUES: Final[FrozenSet[str]] = frozenset(
+    lang.value for lang in LanguageCode if lang is not LanguageCode.UNKNOWN
+)
 LANGUAGE_DISPLAY_NAMES: Final[Mapping[LanguageCode, str]] = MappingProxyType(
     {
         LanguageCode.ENGLISH: "English",
@@ -164,7 +167,7 @@ def display_name(language: LanguageCode) -> str:
 
 
 def is_supported(code: str) -> bool:
-    return code in {lang.value for lang in LanguageCode if lang is not LanguageCode.UNKNOWN}
+    return code in _SUPPORTED_LANGUAGE_VALUES
 
 __all__ = [
     "LanguageCode",

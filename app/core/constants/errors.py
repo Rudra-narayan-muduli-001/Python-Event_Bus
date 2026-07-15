@@ -10,7 +10,9 @@ class ErrorSeverity(IntEnum):
     WARNING = 30
     ERROR = 40
     CRITICAL = 50
-    FATAL = 60   
+    FATAL = 60
+
+
 class ErrorDomain(str, Enum):
 
     GENERAL = "GEN"

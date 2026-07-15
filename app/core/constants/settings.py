@@ -139,6 +139,7 @@ class TelemetrySettings:
 
 
 TELEMETRY: Final[TelemetrySettings] = TelemetrySettings()
+
 @dataclass(frozen=True, slots=True)
 class SearchSettings:
     default_provider: str = "auto"
@@ -156,6 +157,7 @@ class SearchSettings:
 
 
 SEARCH: Final[SearchSettings] = SearchSettings()
+
 @dataclass(frozen=True, slots=True)
 class PluginSettings:
     hot_reload_enabled: bool = True
@@ -167,6 +169,7 @@ class PluginSettings:
 
 
 PLUGINS: Final[PluginSettings] = PluginSettings()
+
 @dataclass(frozen=True, slots=True)
 class RetryPolicy:
     max_attempts: int = 3
@@ -192,10 +195,6 @@ DEFAULT_FEATURE_FLAGS: Final[Mapping[str, bool]] = MappingProxyType(
         "high_load_mode_auto": True,
     }
 )
-DEFAULT_ENV: Final[Environment] = DEFAULT_ENVIRONMENT
-DEFAULT_RUNTIME: Final[RuntimeMode] = DEFAULT_RUNTIME_MODE
-DEFAULT_PERFORMANCE: Final[PerformanceMode] = DEFAULT_PERFORMANCE_MODE
-
 __all__ = [
     "VoiceSettings",
     "VOICE",
@@ -219,7 +218,4 @@ __all__ = [
     "RetryPolicy",
     "DEFAULT_RETRY",
     "DEFAULT_FEATURE_FLAGS",
-    "DEFAULT_ENV",
-    "DEFAULT_RUNTIME",
-    "DEFAULT_PERFORMANCE",
 ]

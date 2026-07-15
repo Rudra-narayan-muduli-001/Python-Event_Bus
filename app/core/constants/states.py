@@ -5,9 +5,7 @@ from typing import Final, Mapping, FrozenSet
 
 
 class BaseState(str, Enum):
-
-    def __str__(self) -> str:  
-        return self.value
+    pass
 
 class AppState(BaseState):
     CREATED = "created"

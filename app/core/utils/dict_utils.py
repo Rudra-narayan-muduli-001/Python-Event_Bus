@@ -13,3 +13,11 @@ def deep_merge(base: dict[str, Any], overlay: Mapping[str, Any]) -> dict[str, An
         else:
             result[key] = deepcopy(overlay_value)
     return result
+
+
+def clamp(value: int, low: int, high: int) -> int:
+    return max(low, min(value, high))
+
+
+def within(value: int, high: int, low: int = 0) -> bool:
+    return low <= value <= high
