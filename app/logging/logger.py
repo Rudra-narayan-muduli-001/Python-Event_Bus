@@ -62,9 +62,11 @@ class Logger:
     @property
     def effective_level(self) -> LogLevel:
         return LogLevel(self._logger.getEffectiveLevel())
+
     def set_level(self, level: LogLevel) -> None:
         self._logger.setLevel(int(level))
         self._config.level = level
+
     def bind(self, **context: Any) -> "Logger":
         bound = Logger.__new__(Logger)
         bound._config = self._config
@@ -77,6 +79,7 @@ class Logger:
         if extra:
             merged.update(extra)
         return merged
+
     def child(self, suffix: str) -> "Logger":
         child_name = f"{self.name}.{suffix}" if self.name else suffix
         child_config = LoggerConfig(
@@ -116,6 +119,7 @@ class Logger:
         """Log at a specific level."""
         extra = self._merge_extras(kwargs.pop("extra", None))
         self._logger.log(int(level), msg, *args, extra=extra or None, **kwargs)
+
     def add_handler(self, handler: logging.Handler) -> None:
         self._logger.addHandler(handler)
         self._config.handlers.append(handler)
@@ -123,6 +127,7 @@ class Logger:
         self._logger.removeHandler(handler)
         if handler in self._config.handlers:
             self._config.handlers.remove(handler)
+
     def add_filter(self, flt: logging.Filter) -> None:
         self._logger.addFilter(flt)
         self._config.filters.append(flt)
@@ -130,6 +135,7 @@ class Logger:
         self._logger.removeFilter(flt)
         if flt in self._config.filters:
             self._config.filters.remove(flt)
+
     def close(self) -> None:
         for handler in self._logger.handlers[:]:
             try:
@@ -138,5 +144,6 @@ class Logger:
             except Exception:
                 pass
             self._logger.removeHandler(handler)
+
     def __repr__(self) -> str:
         return f"<Logger name={self.name!r} level={self.level.name}>"
