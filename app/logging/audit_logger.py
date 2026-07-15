@@ -365,64 +365,20 @@ class AuditLogger:
 
                     result.total_entries += 1
 
-                    # Parse the JSON line
-                    try:
-                        data = json.loads(line)
-                    except json.JSONDecodeError as e:
-                        result.is_valid = False
-                        result.broken_at = expected_seq + 1
-                        result.broken_reason = (
-                            f"Line {line_num}: JSON parse error: {e}"
-                        )
-                        result.errors.append(
-                            f"Line {line_num}: malformed JSON"
-                        )
-                        return result
-
-                    entry = AuditEntry.from_dict(data)
-                    expected_seq += 1
-                    if entry.seq != expected_seq:
-                        result.is_valid = False
-                        result.broken_at = entry.seq
-                        result.broken_reason = (
-                            f"Sequence gap: expected {expected_seq}, "
-                            f"got {entry.seq}"
-                        )
-                        result.errors.append(
-                            f"Entry seq={entry.seq}: sequence discontinuity"
-                        )
-                        return result
-                    if entry.prev_hmac != expected_prev:
-                        result.is_valid = False
-                        result.broken_at = entry.seq
-                        result.broken_reason = (
-                            f"Chain broken at seq={entry.seq}: "
-                            f"prev_hmac mismatch (expected {expected_prev[:16]}..., "
-                            f"got {entry.prev_hmac[:16]}...)"
-                        )
-                        result.errors.append(
-                            f"Entry seq={entry.seq}: prev_hmac does not match "
-                            f"previous entry's hmac"
-                        )
-                        return result
-
-                    recomputed = AuditLogger._compute_hmac_static(
-                        entry, hmac_key
+                    failure = AuditLogger._verify_entry(
+                        line, line_num, expected_seq, expected_prev, hmac_key
                     )
-                    if not hmac.compare_digest(recomputed, entry.hmac):
+                    if failure is not None:
                         result.is_valid = False
-                        result.broken_at = entry.seq
-                        result.broken_reason = (
-                            f"HMAC verification failed at seq={entry.seq}: "
-                            f"entry may have been modified"
-                        )
-                        result.errors.append(
-                            f"Entry seq={entry.seq}: HMAC mismatch "
-                            f"(expected {recomputed[:16]}..., "
-                            f"got {entry.hmac[:16]}...)"
-                        )
+                        result.broken_at = failure["at"]
+                        result.broken_reason = failure["reason"]
+                        result.errors.append(failure["error"])
                         return result
-                    expected_prev = entry.hmac
+
+                    data = json.loads(line)
+                    entry_seq = data.get("seq", 0)
+                    expected_prev = data.get("hmac", expected_prev)
+                    expected_seq += 1
                     result.verified_entries += 1
 
         except OSError as e:
@@ -431,6 +387,50 @@ class AuditLogger:
             return result
 
         return result
+
+    @staticmethod
+    def _verify_entry(
+        line: str,
+        line_num: int,
+        expected_seq: int,
+        expected_prev: str,
+        hmac_key: bytes,
+    ) -> Optional[dict]:
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError as e:
+            return {
+                "at": expected_seq + 1,
+                "reason": f"Line {line_num}: JSON parse error: {e}",
+                "error": f"Line {line_num}: malformed JSON",
+            }
+
+        entry = AuditEntry.from_dict(data)
+        if entry.seq != expected_seq + 1:
+            return {
+                "at": entry.seq,
+                "reason": f"Sequence gap: expected {expected_seq + 1}, got {entry.seq}",
+                "error": f"Entry seq={entry.seq}: sequence discontinuity",
+            }
+
+        if entry.prev_hmac != expected_prev:
+            return {
+                "at": entry.seq,
+                "reason": f"Chain broken at seq={entry.seq}: prev_hmac mismatch "
+                          f"(expected {expected_prev[:16]}..., got {entry.prev_hmac[:16]}...)",
+                "error": f"Entry seq={entry.seq}: prev_hmac does not match previous entry's hmac",
+            }
+
+        recomputed = AuditLogger._compute_hmac_static(entry, hmac_key)
+        if not hmac.compare_digest(recomputed, entry.hmac):
+            return {
+                "at": entry.seq,
+                "reason": f"HMAC verification failed at seq={entry.seq}: entry may have been modified",
+                "error": f"Entry seq={entry.seq}: HMAC mismatch "
+                         f"(expected {recomputed[:16]}..., got {entry.hmac[:16]}...)",
+            }
+
+        return None
 
     @staticmethod
     def _compute_hmac_static(entry: AuditEntry, hmac_key: bytes) -> str:
