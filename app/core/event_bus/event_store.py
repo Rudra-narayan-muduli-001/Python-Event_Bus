@@ -192,9 +192,9 @@ class EventStore:
             try:
                 sink(event)
                 count += 1
-            except Exception as exc:  
+            except Exception as exc:
                 if self._logger:
-                    self._logger.error(
+                    self._logger.exception(
                         "Replay failed for event",
                         extra={"event": event.name, "event_id": event.event_id, "error": str(exc)},
                     )
