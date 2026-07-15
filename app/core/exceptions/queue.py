@@ -10,6 +10,7 @@ __all__ = [
     "QueueClosedError",
     "InvalidPriorityError",
     "QueueInterruptedError",
+    "QueueOverflowError",
 ]
 
 
@@ -86,13 +87,12 @@ class QueueInterruptedError(QueueError):
         self.with_context(queue_name=queue_name)
 
 
-class QueueOverflowError(QueueFullError):
+class QueueOverflowError(QueueError):
     def __init__(self, queue_name: str, dropped: int = 1, maxsize: Optional[int] = None, **kwargs: Any) -> None:
-        super().__init__(queue_name=queue_name, maxsize=maxsize, **kwargs)
-        self.code = "QUEUE_OVERFLOW"
-        self.severity = ErrorSeverity.ERROR
-        self.message = f"Queue '{queue_name}' overflowed; dropped {dropped} item(s)"
-        self.with_context(dropped=dropped)
-
-
-__all__.append("QueueOverflowError")
+        super().__init__(
+            f"Queue '{queue_name}' overflowed; dropped {dropped} item(s)",
+            code="QUEUE_OVERFLOW",
+            severity=ErrorSeverity.ERROR,
+            **kwargs,
+        )
+        self.with_context(queue_name=queue_name, maxsize=maxsize, dropped=dropped)
