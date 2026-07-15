@@ -28,6 +28,7 @@ class Container(IContainer):
         self._lock = threading.RLock()
         self._scopes = ScopeManager(logger=logger)
         self._local = threading.local()
+
     @property
     def scopes(self) -> ScopeManager:
         return self._scopes
@@ -39,6 +40,7 @@ class Container(IContainer):
             chain = []
             self._local.chain = chain
         return chain
+
     def register(self, token: Any, provider: IProvider, *, replace: bool = False) -> None:
         with self._lock:
             if token in self._providers and not replace:
@@ -83,6 +85,7 @@ class Container(IContainer):
             ClassProvider(token, implementation, lifetime=lifetime, disposer=disposer),
             replace=replace,
         )
+
     def resolve(self, token: Type[T] | Any) -> T:
         with self._lock:
             provider = self._providers.get(token)
@@ -117,6 +120,7 @@ class Container(IContainer):
     def registered_tokens(self) -> List[Any]:
         with self._lock:
             return list(self._providers.keys())
+
     def create_scope(self, name: str) -> Scope:
         return self._scopes.create_scope(name)
 
@@ -129,12 +133,14 @@ class Container(IContainer):
                 yield scope
         finally:
             self._scopes.pop_scope()
+
     def dispose(self) -> None:
         if self._logger:
             self._logger.info("Disposing DI container")
         self._scopes.dispose_singletons()
         with self._lock:
             self._providers.clear()
+
     def __contains__(self, token: Any) -> bool:
         return self.has(token)
 

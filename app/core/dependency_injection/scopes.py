@@ -27,6 +27,7 @@ class Scope:
         self._disposables: List[Tuple[Any, Any, Callable[[Any], None]]] = []
         self._lock = threading.RLock()
         self._active = True
+
     @property
     def active(self) -> bool:
         return self._active
@@ -77,6 +78,7 @@ class Scope:
                     self.name,
                     reason=f"disposer failures: {'; '.join(errors)}",
                 )
+
     def _ensure_active(self, token: Any) -> None:
         if not self._active:
             raise ScopeError(
@@ -84,6 +86,7 @@ class Scope:
                 self.name,
                 reason="scope has been disposed",
             )
+
     def __enter__(self) -> "Scope":
         return self
 
@@ -102,6 +105,7 @@ class ScopeManager:
         self._singleton_disposers: List[Tuple[Any, Callable[[Any], None]]] = []
         self._lock = threading.RLock()
         self._local = threading.local()
+
     def has_singleton(self, token: Any) -> bool:
         with self._lock:
             return token in self._singletons
@@ -120,6 +124,7 @@ class ScopeManager:
             self._singletons[token] = instance
             if disposer is not None:
                 self._singleton_disposers.append((token, disposer))
+
     @property
     def _scope_stack(self) -> List[Scope]:
         stack = getattr(self._local, "stack", None)
@@ -159,6 +164,7 @@ class ScopeManager:
                 reason="no active scope; resolve a scoped service inside a Scope",
             )
         return scope
+
     def dispose_singletons(self) -> None:
         with self._lock:
             for token, disposer in reversed(self._singleton_disposers):

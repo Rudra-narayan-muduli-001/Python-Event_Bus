@@ -20,6 +20,7 @@ class ContainerBuilder:
     def __init__(self, logger: Optional[Logger] = None) -> None:
         self._container = Container(logger=logger)
         self._built = False
+
     def add_instance(self, token: Any, instance: T, *, replace: bool = False) -> "ContainerBuilder":
         self._ensure_open()
         self._container.register_instance(token, instance, replace=replace)
@@ -85,6 +86,7 @@ class ContainerBuilder:
         self._ensure_open()
         configurator(self._container)
         return self
+
     def build(self) -> Container:
         if self._built:
             raise ProviderError("ContainerBuilder", reason="builder already consumed")
