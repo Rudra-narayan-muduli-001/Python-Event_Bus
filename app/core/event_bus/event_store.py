@@ -94,7 +94,7 @@ class EventStore:
                     ),
                 )
                 self._conn.commit()
-            except (sqlite3.Error, Exception) as exc:  
+            except Exception as exc:
                 if self._logger:
                     self._logger.error(
                         "Failed to persist event",
