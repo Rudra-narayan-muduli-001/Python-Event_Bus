@@ -26,8 +26,8 @@ from app.core.exceptions.dependency import (
 )
 from app.core.exceptions.database import (
     BackupError,
-    ConnectionError,
     DatabaseError,
+    DbConnectionError,
     EncryptionKeyError,
     IntegrityError,
     KnowledgeGraphError,
@@ -167,7 +167,7 @@ __all__ = [
     "ProviderError",
     "ScopeError",
     "DatabaseError",
-    "ConnectionError",
+    "DbConnectionError",
     "TransactionError",
     "MigrationError",
     "QueryError",

@@ -4,7 +4,7 @@ from app.core.exceptions.base import AIOSError, ErrorCategory, ErrorSeverity
 
 __all__ = [
     "DatabaseError",
-    "ConnectionError",
+    "DbConnectionError",
     "TransactionError",
     "MigrationError",
     "QueryError",
@@ -20,7 +20,7 @@ class DatabaseError(AIOSError):
     default_severity = ErrorSeverity.ERROR
 
 
-class ConnectionError(DatabaseError):
+class DbConnectionError(DatabaseError):
     def __init__(self, backend: str, cause: Optional[BaseException] = None, **kwargs: Any) -> None:
         super().__init__(
             f"Database connection failed for backend '{backend}'",
