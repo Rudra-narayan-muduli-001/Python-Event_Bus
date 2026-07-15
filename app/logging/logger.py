@@ -60,12 +60,9 @@ class Logger:
         self._logger.setLevel(int(level))
         self._config.level = level
     def bind(self, **context: Any) -> "Logger":
-        bound = Logger(LoggerConfig(
-            name=self.name,
-            level=self.level,
-            handlers=list(self.handlers),
-            propagate=self._logger.propagate,
-        ))
+        bound = Logger.__new__(Logger)
+        bound._config = self._config
+        bound._logger = self._logger
         bound._bound_context = {**self._bound_context, **context}
         return bound
 
