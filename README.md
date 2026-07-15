@@ -78,7 +78,6 @@ The Event Bus is used by:
 - Database
 - Logging
 - Security
-- All Feature Groups
 - Plugin System
 
 ## Design Principles
