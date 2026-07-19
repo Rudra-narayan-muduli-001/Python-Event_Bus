@@ -52,8 +52,7 @@ def _rotate_with_compression(
 ) -> None:
     if compress and dest and not dest.endswith(".gz"):
         dest_gz = dest + ".gz"
-        with open(source, "rb") as f_in:
-            with gzip.open(dest_gz, "wb") as f_out:
+        with open(source, "rb") as f_in, gzip.open(dest_gz, "wb") as f_out:
                 shutil.copyfileobj(f_in, f_out)
         os.remove(source)
     else:

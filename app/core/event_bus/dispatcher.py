@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import contextlib
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Awaitable, List, Optional
@@ -46,10 +47,8 @@ class Dispatcher:
 
     def _remove_subscriber(self, subscriber: Subscriber) -> None:
         with self._lock:
-            try:
+            with contextlib.suppress(ValueError):
                 self._subscribers.remove(subscriber)
-            except ValueError:
-                pass
 
     def add_middleware(self, middleware: Middleware) -> None:
         self._middleware.add(middleware)

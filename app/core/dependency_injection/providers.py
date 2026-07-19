@@ -83,10 +83,7 @@ class FactoryProvider(_LifetimeMixin, IProvider[T]):
 
     def _create(self, container: IContainer) -> T:
         try:
-            if self._wants_container:
-                instance = self._factory(container)
-            else:
-                instance = self._factory()
+                instance = self._factory(container) if self._wants_container else self._factory()
         except Exception as exc: 
             raise DependencyResolutionError(self._token, cause=exc) from exc
         if instance is None:

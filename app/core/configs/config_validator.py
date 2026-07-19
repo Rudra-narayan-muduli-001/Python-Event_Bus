@@ -231,7 +231,6 @@ except ImportError:
             if perms.get("continuous_verification") is not None:
                 perms["continuous_verification"] = bool(perms["continuous_verification"])
         registry = config.get("model_registry", {})
-        if isinstance(registry, dict):
-            if registry.get("prefer_local") is not None:
+        if isinstance(registry, dict) and registry.get("prefer_local") is not None:
                 registry["prefer_local"] = bool(registry["prefer_local"])
         return config
