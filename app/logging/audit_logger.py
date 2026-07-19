@@ -378,7 +378,6 @@ class AuditLogger:
                         return result
 
                     data = json.loads(line)
-                    entry_seq = data.get("seq", 0)
                     expected_prev = data.get("hmac", expected_prev)
                     expected_seq += 1
                     result.verified_entries += 1
