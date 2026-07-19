@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Awaitable, Dict, List, Optional
+from typing import Any, Awaitable, List, Optional
 from app.core.constants.events import EventDeliveryMode
 from app.core.event_bus.event_types import Event, EventStatus
 from app.core.event_bus.event_store import EventStore

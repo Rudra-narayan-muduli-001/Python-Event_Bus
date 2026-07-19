@@ -2,12 +2,11 @@ import hashlib
 import hmac
 import json
 import logging
-import os
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from app.logging.formatters import BaseFormatter
 from app.logging.logger import LogLevel
 from app.logging.rotation import RotationConfig, RotationType, create_rotating_handler

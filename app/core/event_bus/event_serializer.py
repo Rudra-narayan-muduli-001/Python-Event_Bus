@@ -1,6 +1,5 @@
 from __future__ import annotations
 import json
-from dataclasses import asdict
 from typing import Any, Dict, Optional
 from app.core.constants.events import EventCategory, EventDeliveryMode
 from app.core.event_bus.event_context import EventContext

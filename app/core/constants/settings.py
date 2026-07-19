@@ -1,15 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Final, Mapping
-from app.core.constants.app import (
-    DEFAULT_ENVIRONMENT,
-    DEFAULT_PERFORMANCE_MODE,
-    DEFAULT_RUNTIME_MODE,
-    Environment,
-    PerformanceMode,
-    RuntimeMode,
-)
 
 @dataclass(frozen=True, slots=True)
 class VoiceSettings:

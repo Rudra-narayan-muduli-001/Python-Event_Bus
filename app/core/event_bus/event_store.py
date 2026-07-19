@@ -4,7 +4,7 @@ import threading
 import time
 from collections import deque
 from pathlib import Path
-from typing import Any, Callable, Deque, Dict, Iterable, List, Optional
+from typing import Any, Callable, Deque, List, Optional
 from app.core.constants.events import EventCategory
 from app.core.event_bus.event_serializer import EventSerializer
 from app.core.event_bus.event_types import Event

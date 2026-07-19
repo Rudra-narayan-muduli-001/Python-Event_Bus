@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Iterable, Optional, Pattern
+from typing import Any, Callable, Pattern
 import re
 from app.core.constants.events import EventCategory
 from app.core.event_bus.event_priority import EventPriority, resolve_priority

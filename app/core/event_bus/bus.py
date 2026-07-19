@@ -1,6 +1,6 @@
 from __future__ import annotations
 import threading
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 from app.core.constants.events import EventCategory, EventDeliveryMode
 from app.core.event_bus.dispatcher import Dispatcher
 from app.core.event_bus.event_filter import AcceptAllFilter, EventFilter

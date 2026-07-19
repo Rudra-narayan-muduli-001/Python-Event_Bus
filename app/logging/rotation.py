@@ -2,11 +2,11 @@ import gzip
 import logging
 import os
 import shutil
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Callable, Optional
 
 
 class RotationType(Enum):

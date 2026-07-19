@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from types import MappingProxyType
 from typing import Final, Mapping, Iterable
-from app.core.constants.app import APP_SLUG, FeatureGroup
+from app.core.constants.app import FeatureGroup
 
 _ENV_ROOT_VAR: Final[str] = "AIOS_ROOT"
 
