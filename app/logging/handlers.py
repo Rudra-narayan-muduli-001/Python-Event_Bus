@@ -32,7 +32,7 @@ class ConsoleHandler(logging.StreamHandler):
             self.flush()
         except RecursionError:
             raise
-        except Exception:
+        except Exception:  # noqa: BLE001
             self.handleError(record)
 
 
@@ -133,7 +133,7 @@ class CompositeHandler(logging.Handler):
         for handler in self._handlers:
             try:
                 handler.handle(record)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 self.handleError(record)
 
     def close(self) -> None:

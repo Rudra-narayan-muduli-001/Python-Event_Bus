@@ -141,7 +141,7 @@ class Logger:
             try:
                 handler.flush()
                 handler.close()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
             self._logger.removeHandler(handler)
 

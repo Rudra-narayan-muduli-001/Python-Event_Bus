@@ -57,7 +57,7 @@ class MiddlewareChain:
                 mw = chain[index]
                 try:
                     return mw.process(evt, make_link(index + 1))
-                except Exception as exc:  
+                except Exception as exc:  # noqa: BLE001
                     if self._logger:
                         self._logger.error(
                             "Middleware raised; dropping event",

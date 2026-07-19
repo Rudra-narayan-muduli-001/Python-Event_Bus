@@ -140,7 +140,7 @@ class Dispatcher:
         if self._store is not None:
             try:
                 self._store.record(event)
-            except Exception as exc: 
+            except Exception as exc:  # noqa: BLE001
                 self._logger.error(
                     "Event store record failed",
                     extra={"event": event.name, "error": str(exc)},

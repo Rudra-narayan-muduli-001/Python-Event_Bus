@@ -68,7 +68,7 @@ class Scope:
             for token, instance, disposer in reversed(self._disposables):
                 try:
                     disposer(instance)
-                except Exception as exc:  
+                except Exception as exc:  # noqa: BLE001
                     errors.append(f"{token!r}: {exc}")
             self._disposables.clear()
             self._instances.clear()
@@ -170,7 +170,7 @@ class ScopeManager:
             for token, disposer in reversed(self._singleton_disposers):
                 try:
                     disposer(self._singletons.get(token))
-                except Exception as exc:  
+                except Exception as exc:  # noqa: BLE001
                     if self._logger:
                         self._logger.error(
                             "Singleton disposer failed",

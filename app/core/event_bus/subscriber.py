@@ -106,7 +106,7 @@ class Subscriber:
             result = handler(event)
             self._after_success()
             return result
-        except Exception as exc:  
+        except Exception as exc:  # noqa: BLE001
             return self._handle_error(event, exc)
 
     async def invoke_async(self, event: Event) -> Any:
@@ -121,7 +121,7 @@ class Subscriber:
                 result = handler(event)
             self._after_success()
             return result
-        except Exception as exc:  
+        except Exception as exc:  # noqa: BLE001
             return self._handle_error(event, exc)
 
     def pause(self) -> None:

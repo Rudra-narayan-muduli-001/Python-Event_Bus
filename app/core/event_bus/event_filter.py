@@ -31,7 +31,7 @@ class EventFilter(ABC):
     def accepts(self, event: Event) -> bool:
         try:
             return self.matches(event)
-        except Exception:  
+        except Exception:  # noqa: BLE001
             return False
 
     def __and__(self, other: "EventFilter") -> "EventFilter":

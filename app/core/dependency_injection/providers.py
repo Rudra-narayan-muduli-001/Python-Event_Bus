@@ -115,7 +115,7 @@ class FactoryProvider(_LifetimeMixin, IProvider[T]):
         try:
             hints = get_type_hints(factory)
             return hints.get("return", object)
-        except Exception:  
+        except (TypeError, NameError):
             return object
 
     def __repr__(self) -> str:  
