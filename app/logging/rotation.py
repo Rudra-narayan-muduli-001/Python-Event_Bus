@@ -67,6 +67,7 @@ def create_rotating_handler(
 ) -> logging.Handler:
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
 
+    handler: logging.Handler
     if config.rotation_type == RotationType.SIZE:
         handler = _CompressingRotatingFileHandler(
             filename=file_path,
@@ -86,7 +87,7 @@ def create_rotating_handler(
             utc=True,
         )
 
-    handler.compress = config.compress
+    setattr(handler, "compress", config.compress)
 
     if formatter is not None:
         handler.setFormatter(formatter)

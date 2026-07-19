@@ -102,7 +102,7 @@ class Subscriber:
                     asyncio.get_running_loop()
                     return coro
                 except RuntimeError:
-                    return asyncio.run(coro)
+                    return asyncio.run(coro) if inspect.iscoroutine(coro) else coro
             result = handler(event)
             self._after_success()
             return result
@@ -165,7 +165,8 @@ class Subscriber:
             )
         if self.error_policy is ErrorPolicy.PROPAGATE:
             raise EventHandlerError(
-                f"Handler {self.name!r} failed for event {event.name!r}",
+                event_type=event.name,
+                handler=self.name,
                 cause=exc,
             ) from exc
         if self.error_policy is ErrorPolicy.DISABLE:
@@ -179,10 +180,9 @@ class Subscriber:
         if not weak:
             return lambda: handler
         try:
-            ref = weakref.WeakMethod(handler)  
+            return weakref.WeakMethod(handler)
         except TypeError:
-            ref = weakref.ref(handler)
-        return ref  
+            return weakref.ref(handler)
 
     def _resolve_handler(self) -> Optional[EventHandler]:
         handler = self._handler_ref()

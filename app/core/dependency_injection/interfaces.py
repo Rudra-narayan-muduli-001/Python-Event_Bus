@@ -1,6 +1,9 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
+
+from app.core.dependency_injection.scopes import ScopeManager
+
 T = TypeVar("T")
 
 class IProvider(ABC, Generic[T]):
@@ -15,6 +18,11 @@ class IProvider(ABC, Generic[T]):
 
 
 class IContainer(ABC):
+    @property
+    @abstractmethod
+    def scopes(self) -> ScopeManager:
+        ...
+
     @abstractmethod
     def register(self, token: Any, provider: IProvider) -> None:
         ...

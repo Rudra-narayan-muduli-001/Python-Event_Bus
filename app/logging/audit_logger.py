@@ -81,7 +81,7 @@ class AuditFormatter(BaseFormatter):
         entry: Optional[AuditEntry] = getattr(record, "audit_entry", None)
         if entry is not None:
             return entry.to_json_line()
-        payload = {
+        payload: dict[str, Any] = {
             "timestamp": self._format_timestamp(record),
             "level": record.levelname,
             "logger": record.name,

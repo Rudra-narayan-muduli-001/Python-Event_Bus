@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional
+from typing import Any, Awaitable, Dict, List, Optional
 from app.core.constants.events import EventDeliveryMode
 from app.core.event_bus.event_types import Event, EventStatus
 from app.core.event_bus.event_store import EventStore
@@ -110,7 +110,7 @@ class Dispatcher:
             return self._finalize(processed)
 
         loop = asyncio.get_running_loop()
-        coros = []
+        coros: list[Awaitable[Any]] = []
         for sub in targets:
             if sub.is_async:
                 coros.append(sub.invoke_async(processed))
