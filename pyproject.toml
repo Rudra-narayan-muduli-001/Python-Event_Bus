@@ -20,7 +20,12 @@ dependencies = [
 [project.optional-dependencies]
 pydantic = ["pydantic>=2.0"]
 dotenv = ["python-dotenv>=1.0"]
-all = ["event-bus[pydantic,dotenv]"]
+all = ["aios-event-bus[pydantic,dotenv]"]
+dev = [
+    "pytest>=9.0",
+    "pytest-asyncio>=1.4",
+    "pytest-cov>=7.0",
+]
 
 [project.urls]
 Source = "https://github.com/Rudra-narayan-muduli-001/Python-Event_Bus"
