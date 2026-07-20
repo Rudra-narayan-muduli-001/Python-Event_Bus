@@ -1,3 +1,11 @@
+```
+███████╗██╗   ██╗███████╗███╗   ██╗████████╗██████╗ ██╗   ██╗███████╗
+██╔════╝██║   ██║██╔════╝████╗  ██║╚══██╔══╝██╔══██╗██║   ██║██╔════╝
+█████╗  ██║   ██║█████╗  ██╔██╗ ██║   ██║   ██████╔╝██║   ██║███████╗
+██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║╚██╗██║   ██║   ██╔══██╗██║   ██║╚════██║
+███████╗ ╚████╔╝ ███████╗██║ ╚████║   ██║   ██████╔╝╚██████╔╝███████║
+╚══════╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚═════╝  ╚═════╝ ╚══════╝
+
 # Event Bus
 
 The Event Bus is the communication backbone of AIOS. It enables asynchronous, event-driven communication between all modules without direct dependencies, making the system modular, scalable, and maintainable.
